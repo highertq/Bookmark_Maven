@@ -76,13 +76,13 @@ async function generateAIComment(prompt: string): Promise<string> {
       model: 'deepseek-ai/DeepSeek-V3',
       stream: false,
       max_tokens: 1024,
-      temperature: 0.7,  // 调整为官方示例的参数
-      top_p: 0.7,       // 调整为官方示例的参数
+      temperature: 0.7,
+      top_p: 0.7,
       top_k: 50,
       frequency_penalty: 0.5,
       n: 1,
       messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'JSON' }  // 添加 response_format
+      response_format: { type: 'json_object' }  // 修改这里，将 'JSON' 改为 'json_object'
     };
 
     // 打印完整请求消息到控制台
