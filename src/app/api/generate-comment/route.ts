@@ -81,7 +81,8 @@ async function generateAIComment(prompt: string): Promise<string> {
       top_k: 50,
       frequency_penalty: 0.5,
       n: 1,
-      messages: [{ role: 'user', content: prompt }]
+      messages: [{ role: 'user', content: prompt }],
+      response_format : [{ type : JSON } ]
     };
 
     // 打印完整请求消息到控制台
