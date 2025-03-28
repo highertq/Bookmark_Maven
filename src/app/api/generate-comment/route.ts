@@ -81,8 +81,16 @@ async function generateAIComment(prompt: string): Promise<string> {
       top_k: 50,
       frequency_penalty: 0.5,
       n: 1,
-      messages: [{ role: 'user', content: prompt }],
-      response_format: { type: 'json_object' }  // 修改这里，将 'JSON' 改为 'json_object'
+      messages: [
+        { 
+          role: 'system', 
+          content: '你是一个毒舌评论员，请用讽刺的语气回复。直接输出评论内容，不要加任何多余的格式。'
+        },
+        { 
+          role: 'user', 
+          content: prompt 
+        }
+      ]
     };
 
     // 打印完整请求消息到控制台
