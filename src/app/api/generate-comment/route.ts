@@ -84,7 +84,7 @@ async function generateAIComment(prompt: string): Promise<string> {
       messages: [
         { 
           role: 'system', 
-          content: '你是一个毒舌评论员，请用讽刺的语气回复。直接输出评论内容，不要加任何多余的格式。'
+          content: '你是一个毒舌评论员。请直接输出评论内容，不要有任何前缀或格式化。'
         },
         { 
           role: 'user', 
@@ -134,11 +134,17 @@ async function generateAIComment(prompt: string): Promise<string> {
     const contentType = response.headers.get('Content-Type');
     let data;
     if (contentType && contentType.includes('application/json')) {
-      data = await response.json().catch(e => {
-        console.error('解析API响应失败:', e);
+      const responseText = await response.text();
+      console.log('原始API响应:', responseText);
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error('解析API响应失败:', e, '原始响应:', responseText);
         throw new Error('无法解析API响应');
-      });
+      }
     } else {
+      const responseText = await response.text();
+      console.error('API响应不是JSON格式:', responseText);
       throw new Error('API响应不是JSON格式');
     }
 
@@ -146,10 +152,12 @@ async function generateAIComment(prompt: string): Promise<string> {
 
     // 根据硅基流动API的响应格式解析内容
     if (data && data.choices && data.choices.length > 0 && data.choices[0].message && data.choices[0].message.content) {
-      return data.choices[0].message.content;
+      const content = data.choices[0].message.content.trim();
+      // 确保返回的内容不是 [1] 这样的格式
+      return content === '[1]' ? '生成评论失败，请重试' : content;
     } else {
       console.error('API响应格式不符合预期:', data);
-      throw new Error('API响应格式不符合预期: ' + JSON.stringify(data).substring(0, 100));
+      throw new Error('API响应格式不符合预期');
     }
   } catch (error) {
     console.error('AI模型调用失败:', error);
