@@ -9,7 +9,7 @@ interface BookmarkData {
 export async function POST(request: Request) {
   try {
     const { bookmarks } = await request.json() as { bookmarks: BookmarkData[] };
-    
+
     if (!bookmarks || !Array.isArray(bookmarks) || bookmarks.length === 0) {
       return NextResponse.json({ error: '无效的书签数据' }, { status: 400 });
     }
@@ -18,7 +18,7 @@ export async function POST(request: Request) {
     // 构建提示词
     const prompt = generatePrompt(bookmarks);
     console.log('生成的提示词:', prompt);
-    
+
     try {
       // 调用deepseek-r1模型
       const comment = await generateAIComment(prompt);
@@ -27,7 +27,7 @@ export async function POST(request: Request) {
       console.error('AI模型调用出错:', aiError);
       // 返回更具体的错误信息
       const errorMessage = aiError instanceof Error ? aiError.message : '生成评论失败';
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: errorMessage,
         details: '调用AI模型时出错，请稍后再试或联系管理员'
       }, { status: 503 });
@@ -68,9 +68,9 @@ async function generateAIComment(prompt: string): Promise<string> {
     // API密钥应该存储在环境变量中，这里临时使用提供的密钥
     // 在生产环境中，请使用环境变量：process.env.SILICONFLOW_API_KEY
     const apiKey = process.env.SILICONFLOW_API_KEY;
-    
+
     console.log('开始调用硅基流动API...');
-    
+
     // 构建请求体
     const requestBody = {
       model: 'deepseek-ai/DeepSeek-V3',
@@ -83,7 +83,7 @@ async function generateAIComment(prompt: string): Promise<string> {
       n: 1,
       messages: [{ role: 'user', content: prompt }]
     };
-    
+
     // 打印完整请求消息到控制台
     console.log('发送给API的请求消息:', JSON.stringify(requestBody, null, 2));
     const response = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
@@ -94,13 +94,17 @@ async function generateAIComment(prompt: string): Promise<string> {
       },
       body: JSON.stringify(requestBody)
     });
-    
+
     if (!response.ok) {
-      //const errorData = await response.json().catch(e => ({ error: '无法解析错误响应' }));
-      //const errorData = await response.json().catch((void _e) => ({ error: '无法解析错误响应' }));
-      const errorData = await response.json().catch(() => ({ error: '无法解析错误响应' }));
+      const contentType = response.headers.get('Content-Type');
+      let errorData;
+      if (contentType && contentType.includes('application/json')) {
+        errorData = await response.json().catch(() => ({ error: '无法解析错误响应' }));
+      } else {
+        errorData = { error: await response.text() };
+      }
       console.error('硅基流动API响应错误:', errorData, '状态码:', response.status, response.statusText);
-      
+
       // 针对503错误特别处理
       if (response.status === 503) {
         // 检查是否是余额不足的错误
@@ -109,18 +113,24 @@ async function generateAIComment(prompt: string): Promise<string> {
           throw new Error('API账户余额不足，请充值后再试或联系管理员更换API密钥');
         }
       }
-      
+
       const errorMessage = errorData.error || errorData.error?.message || errorData.message || `API调用失败: ${response.status} ${response.statusText}`;
       throw new Error(errorMessage);
     }
-    
-    const data = await response.json().catch(e => {
-      console.error('解析API响应失败:', e);
-      throw new Error('无法解析API响应');
-    });
-    
+
+    const contentType = response.headers.get('Content-Type');
+    let data;
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json().catch(e => {
+        console.error('解析API响应失败:', e);
+        throw new Error('无法解析API响应');
+      });
+    } else {
+      throw new Error('API响应不是JSON格式');
+    }
+
     console.log('API响应数据:', JSON.stringify(data).substring(0, 200) + '...');
-    
+
     // 根据硅基流动API的响应格式解析内容
     if (data && data.choices && data.choices.length > 0 && data.choices[0].message && data.choices[0].message.content) {
       return data.choices[0].message.content;
@@ -133,4 +143,4 @@ async function generateAIComment(prompt: string): Promise<string> {
     // 不再吞掉错误，而是将其抛出，让上层处理
     throw new Error(error instanceof Error ? error.message : '未知错误');
   }
-}
+}    
