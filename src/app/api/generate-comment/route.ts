@@ -81,9 +81,9 @@ async function generateAIComment(prompt: string): Promise<string> {
       top_k: 50,
       frequency_penalty: 0.5,
       n: 1,
-      messages: [{ role: 'user', content: prompt }],
-      response_format : [{ type : JSON } ]
+      messages: [{ role: 'user', content: prompt }]
     };
+    // 删除了不正确的 response_format 参数
 
     // 打印完整请求消息到控制台
     console.log('发送给API的请求消息:', JSON.stringify(requestBody, null, 2));
@@ -99,10 +99,14 @@ async function generateAIComment(prompt: string): Promise<string> {
     if (!response.ok) {
       const contentType = response.headers.get('Content-Type');
       let errorData;
-      if (contentType && contentType.includes('application/json')) {
-        errorData = await response.json().catch(() => ({ error: '无法解析错误响应' }));
-      } else {
-        errorData = { error: await response.text() };
+      try {
+        errorData = contentType?.includes('application/json') 
+          ? await response.json() 
+          : { error: await response.text() };
+        console.error('完整的API错误响应:', JSON.stringify(errorData, null, 2));
+      } catch (e) {
+        console.error('解析错误响应失败:', e);
+        errorData = { error: '无法解析错误响应' };
       }
       console.error('硅基流动API响应错误:', errorData, '状态码:', response.status, response.statusText);
 
@@ -144,4 +148,4 @@ async function generateAIComment(prompt: string): Promise<string> {
     // 不再吞掉错误，而是将其抛出，让上层处理
     throw new Error(error instanceof Error ? error.message : '未知错误');
   }
-}    
+}
