@@ -65,13 +65,12 @@ ${bookmarkInfo}
 async function generateAIComment(prompt: string): Promise<string> {
   try {
     // 使用硅基流动API调用模型
-    // API密钥应该存储在环境变量中，这里临时使用提供的密钥
-    // 在生产环境中，请使用环境变量：process.env.SILICONFLOW_API_KEY
     const apiKey = process.env.SILICONFLOW_API_KEY;
 
-    console.log('开始调用硅基流动API...');
+    if (!apiKey) {
+      throw new Error('API密钥未设置，请在环境变量中配置SILICONFLOW_API_KEY');
+    }
 
-    // 构建请求体 - 根据硅基流动API文档格式
     const requestBody = {
       model: 'deepseek-ai/DeepSeek-V3',
       stream: false,
@@ -82,30 +81,15 @@ async function generateAIComment(prompt: string): Promise<string> {
       frequency_penalty: 0.5,
       n: 1,
       messages: [
-        { 
-          role: 'system', 
-          content: '你是一个毒舌评论员。请直接输出评论内容，不要有任何前缀或格式化。'
-        },
-        { 
-          role: 'user', 
-          content: prompt 
-        }
+        { role: 'system', content: '你是一个毒舌评论员。请直接输出评论内容，不要有任何前缀或格式化。' },
+        { role: 'user', content: prompt }
       ]
     };
 
-    // 打印完整请求消息到控制台
-    console.log('发送给API的请求消息:', JSON.stringify(requestBody, null, 2));
-    
-    // 检查API密钥是否存在
-    if (!apiKey) {
-      console.error('API密钥未设置');
-      throw new Error('API密钥未设置，请在环境变量中配置SILICONFLOW_API_KEY');
-    }
-    // 添加超时和重试机制
     let response;
     let retryCount = 0;
     const maxRetries = 2;
-    
+
     while (retryCount <= maxRetries) {
       try {
         response = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
@@ -121,7 +105,7 @@ async function generateAIComment(prompt: string): Promise<string> {
       } catch (fetchError) {
         retryCount++;
         console.error(`API请求失败(尝试 ${retryCount}/${maxRetries + 1}):`, fetchError);
-        
+
         if ((fetchError as { name?: string }).name === 'AbortError') {
           console.error('API请求超时');
           if (retryCount > maxRetries) {
@@ -130,12 +114,11 @@ async function generateAIComment(prompt: string): Promise<string> {
         } else if (retryCount > maxRetries) {
           throw new Error(`API请求失败: ${(fetchError as Error).message ?? '未知错误'}`);
         }
-        
-        // 等待一段时间后重试
+
         await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
       }
     }
-    
+
     if (!response) {
       throw new Error('API请求失败，无法获取响应');
     }
@@ -147,69 +130,36 @@ async function generateAIComment(prompt: string): Promise<string> {
         errorData = contentType?.includes('application/json') 
           ? await response.json() 
           : { error: await response.text() };
-        console.error('完整的API错误响应:', JSON.stringify(errorData, null, 2));
       } catch (e) {
         console.error('解析错误响应失败:', e);
         errorData = { error: '无法解析错误响应' };
       }
-      console.error('硅基流动API响应错误:', errorData, '状态码:', response.status, response.statusText);
 
-      // 针对503错误特别处理
-      if (response.status === 503) {
-        // 检查是否是余额不足的错误
-        if (errorData.error && typeof errorData.error === 'string' && errorData.error.includes('balance is insufficient')) {
-          console.error('API账户余额不足错误，尝试使用免费模型');
-          throw new Error('API账户余额不足，请充值后再试或联系管理员更换API密钥');
-        }
+      if (response.status === 503 && errorData.error?.includes('balance is insufficient')) {
+        throw new Error('API账户余额不足，请充值后再试或联系管理员更换API密钥');
       }
 
-      const errorMessage = errorData.error || errorData.error?.message || errorData.message || `API调用失败: ${response.status} ${response.statusText}`;
-      throw new Error(errorMessage);
+      throw new Error(`API调用失败: ${response.status} ${response.statusText}`);
     }
 
-    // 获取响应文本
+    let data;
     const responseText = await response.text();
-    console.log('原始API响应:', responseText);
-    
-    // 检查响应文本是否为空
+
     if (!responseText || responseText.trim() === '') {
-      console.error('API响应为空');
       throw new Error('API响应为空');
     }
-    
-    // 直接尝试解析 JSON
+
+    if (responseText.trim()[0] !== '{' && responseText.trim()[0] !== '[') {
+      return responseText.trim();
+    }
+
+    const cleanedText = responseText.trim().replace(/[\ufeff\u200b\u0000]/g, '');
     try {
-      const data = JSON.parse(responseText);
-      console.log('解析后的API响应数据结构:', JSON.stringify(data, null, 2));
-      
-      // 提取内容
-      if (data && data.choices && data.choices.length > 0) {
-        if (data.choices[0].message && data.choices[0].message.content) {
-          return data.choices[0].message.content.trim();
-        } else if (data.choices[0].content) {
-          return data.choices[0].content.trim();
-        } else {
-          throw new Error('API响应格式不符合预期：找不到content字段');
-        }
-      } else {
-        throw new Error('API响应格式不符合预期：缺少choices字段或为空');
-      }
-    } catch (parseError) {
-      console.error('JSON解析错误:', parseError);
-      
-      // 如果无法解析为JSON，检查是否是纯文本响应
-      // 有些API在错误时可能返回纯文本而不是JSON
-      if (responseText.includes('error') || responseText.includes('Error')) {
-        throw new Error(`API错误: ${responseText.substring(0, 200)}`);
-      }
-      
-      // 如果看起来像是直接返回的文本内容，就直接使用它
-      if (!responseText.startsWith('{') && !responseText.startsWith('[')) {
-        console.log('API似乎直接返回了文本内容，跳过JSON解析');
-        return responseText.trim();
-      }
-      
-      throw new Error(`无法解析API响应: ${parseError.message}`);
+      data = JSON.parse(cleanedText);
+      return data.choices[0]?.message?.content || '无法提取评论内容';
+    } catch (error) {
+      console.error('处理API响应时出错:', error);
+      return responseText.trim(); // 如果JSON解析失败，返回原始文本
     }
   } catch (error) {
     console.error('AI模型调用失败:', error);
