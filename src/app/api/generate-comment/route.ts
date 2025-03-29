@@ -22,7 +22,10 @@ export async function POST(request: Request) {
     try {
       // 调用deepseek-r1模型
       const comment = await generateAIComment(prompt);
-      return NextResponse.json({ comment });
+      console.log('最终返回给前端的评论:', comment);
+      
+      // 确保返回一个有效的 JSON 对象
+      return NextResponse.json({ comment }, { status: 200 });
     } catch (aiError) {
       console.error('AI模型调用出错:', aiError);
       // 返回更具体的错误信息
@@ -183,11 +186,18 @@ async function generateAIComment(prompt: string): Promise<string> {
       if (data.choices && data.choices.length > 0) {
         const content = data.choices[0]?.message?.content;
         console.log('提取的内容长度:', content ? content.length : 0);
-        return content || '无法提取评论内容';
+        
+        // 确保返回字符串
+        if (typeof content === 'string') {
+          return content.trim();
+        } else if (content) {
+          return JSON.stringify(content);
+        } else {
+          return '无法提取评论内容';
+        }
       } else {
         console.warn('JSON响应格式异常，缺少预期的choices字段');
-        console.log('JSON响应结构:', JSON.stringify(data).substring(0, 200));
-        return cleanedText; // 返回原始清理后的文本
+        return '无法生成评论，API返回格式异常';
       }
     } catch (parseError) {
       console.error('JSON解析失败:', parseError instanceof Error ? parseError.message : '未知错误');
