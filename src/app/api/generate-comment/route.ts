@@ -223,7 +223,7 @@ async function generateAIComment(prompt: string): Promise<string> {
             data = JSON.parse(cleanedText1);
             console.log('清理方法1解析成功');
             return data;
-          } catch (e1) {
+          } catch (_e1) {
             console.log('清理方法1解析失败，尝试方法2');
             
             // 方法2: 查找可能的JSON部分
