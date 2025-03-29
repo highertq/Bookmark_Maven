@@ -123,13 +123,13 @@ async function generateAIComment(prompt: string): Promise<string> {
         retryCount++;
         console.error(`API请求失败(尝试 ${retryCount}/${maxRetries + 1}):`, fetchError);
         
-        if (fetchError.name === 'AbortError') {
+        if ((fetchError as { name?: string }).name === 'AbortError') {
           console.error('API请求超时');
           if (retryCount > maxRetries) {
             throw new Error('API请求超时，请稍后再试');
           }
         } else if (retryCount > maxRetries) {
-          throw new Error(`API请求失败: ${fetchError.message}`);
+          throw new Error(`API请求失败: ${(fetchError as Error).message ?? '未知错误'}`);
         }
         
         // 等待一段时间后重试
@@ -168,7 +168,6 @@ async function generateAIComment(prompt: string): Promise<string> {
       throw new Error(errorMessage);
     }
 
-    const contentType = response.headers.get('Content-Type');
     let data;
     const responseText = await response.text();
     console.log('原始API响应:', responseText);
