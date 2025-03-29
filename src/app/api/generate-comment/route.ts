@@ -123,6 +123,10 @@ async function generateAIComment(prompt: string): Promise<string> {
       throw new Error('API请求失败，无法获取响应');
     }
 
+    // 记录响应状态
+    console.log(`API响应状态: ${response.status} ${response.statusText}`);
+    console.log('API响应头:', JSON.stringify(Object.fromEntries(response.headers.entries())));
+
     if (!response.ok) {
       const contentType = response.headers.get('Content-Type');
       let errorData;
@@ -144,22 +148,69 @@ async function generateAIComment(prompt: string): Promise<string> {
 
     let data;
     const responseText = await response.text();
+    
+    // 详细记录响应内容
+    console.log('API原始响应长度:', responseText.length);
+    console.log('API响应前100个字符:', JSON.stringify(responseText.substring(0, 100)));
+    console.log('API响应最后100个字符:', JSON.stringify(responseText.substring(responseText.length - 100)));
+    
+    // 检查是否有特殊字符
+    const hexDump = Array.from(responseText.substring(0, 20)).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' ');
+    console.log('响应前20个字符的十六进制表示:', hexDump);
 
     if (!responseText || responseText.trim() === '') {
+      console.error('API响应为空');
       throw new Error('API响应为空');
     }
 
-    if (responseText.trim()[0] !== '{' && responseText.trim()[0] !== '[') {
+    // 更详细地检查响应格式
+    const firstChar = responseText.trim()[0];
+    console.log('响应第一个字符:', firstChar, '(Unicode:', firstChar.charCodeAt(0), ')');
+    
+    if (firstChar !== '{' && firstChar !== '[') {
+      console.log('响应不是JSON格式，直接返回文本');
       return responseText.trim();
     }
 
-    const cleanedText = responseText.trim().replace(/[\ufeff\u200b\u0000]/g, '');
     try {
+      // 尝试解析JSON
+      const cleanedText = responseText.trim().replace(/[\ufeff\u200b\u0000]/g, '');
+      console.log('清理后的响应前50个字符:', JSON.stringify(cleanedText.substring(0, 50)));
+      
       data = JSON.parse(cleanedText);
-      return data.choices[0]?.message?.content || '无法提取评论内容';
-    } catch (error) {
-      console.error('处理API响应时出错:', error);
-      return responseText.trim(); // 如果JSON解析失败，返回原始文本
+      console.log('成功解析为JSON，结构:', Object.keys(data).join(', '));
+      
+      if (data.choices && data.choices.length > 0) {
+        const content = data.choices[0]?.message?.content;
+        console.log('提取的内容长度:', content ? content.length : 0);
+        return content || '无法提取评论内容';
+      } else {
+        console.warn('JSON响应格式异常，缺少预期的choices字段');
+        console.log('JSON响应结构:', JSON.stringify(data).substring(0, 200));
+        return cleanedText; // 返回原始清理后的文本
+      }
+    } catch (parseError) {
+      console.error('JSON解析失败:', parseError instanceof Error ? parseError.message : '未知错误');
+      console.log('尝试解析的文本前200个字符:', JSON.stringify(cleanedText).substring(0, 200));
+      
+      // 尝试查找可能的JSON部分
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const extractedJson = jsonMatch[0];
+        console.log('从响应中提取可能的JSON部分，长度:', extractedJson.length);
+        
+        try {
+          const extractedData = JSON.parse(extractedJson);
+          console.log('成功解析提取的JSON部分');
+          return extractedData.choices?.[0]?.message?.content || extractedJson;
+        } catch (e) {
+          console.error('提取的JSON部分解析失败:', e);
+        }
+      }
+      
+      // 如果所有解析方法都失败，返回原始文本
+      console.log('所有JSON解析方法都失败，返回原始响应文本');
+      return responseText.trim();
     }
   } catch (error) {
     console.error('AI模型调用失败:', error);
