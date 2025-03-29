@@ -38,40 +38,41 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
         body: JSON.stringify({ bookmarks }),
       });
 
-      // 获取响应文本，然后尝试解析为 JSON
+      // 根据您的建议，先获取响应文本
       const responseText = await response.text();
-      console.log('API响应内容:', responseText.substring(0, 100)); // 记录响应内容前100个字符
-      
+      console.log('API原始响应:', responseText);
+
+      // 尝试解析为JSON
       let data;
       try {
-        // 尝试解析 JSON
+        // 尝试直接解析响应文本
         data = JSON.parse(responseText);
+        console.log('成功解析JSON响应:', data);
+        
+        // 如果返回的是有效的JSON对象且包含comment字段
+        if (data && data.comment) {
+          setComment(data.comment);
+        } 
+        // 如果返回的是纯文本或普通字符串
+        else if (typeof data === 'string') {
+          setComment(data);
+        }
+        // 如果JSON中没有直接的comment字段，检查是否是API标准响应格式
+        else if (data.choices && data.choices.length > 0 && data.choices[0].message?.content) {
+          setComment(data.choices[0].message.content);
+        }
+        // 否则将整个JSON作为文本展示
+        else {
+          setComment(JSON.stringify(data));
+        }
       } catch (parseError) {
-        console.error('解析响应失败:', parseError);
-        // 如果不是 JSON，则作为纯文本处理
+        console.error('JSON解析失败，作为纯文本处理:', parseError);
+        // 如果解析失败，直接使用响应文本
         if (responseText && responseText.trim()) {
           setComment(responseText.trim());
-          setIsLoading(false);
-          return; // 直接返回，不继续处理
         } else {
-          throw new Error('服务器返回了无效的响应');
+          throw new Error('服务器返回了空的响应');
         }
-      }
-
-      if (!response.ok) {
-        const errorMsg = data.error || '生成评论失败';
-        const errorDetails = data.details || '';
-        throw new Error(`${errorMsg}${errorDetails ? `\n${errorDetails}` : ''}`);
-      }
-
-      if (data.comment) {
-        // 正常的 JSON 响应处理
-        setComment(data.comment);
-      } else if (typeof data === 'string') {
-        // 直接返回的文本
-        setComment(data);
-      } else {
-        throw new Error('服务器返回了无效的评论内容');
       }
     } catch (err) {
       console.error('获取评论失败:', err);
