@@ -113,11 +113,22 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
         throw new Error('服务器处理超时，请稍后再试');
       }
       
+      // 过滤<think>标签及其内容
+      let processedText = responseText;
+      
+      // 使用正则表达式删除所有<think>标签及其内容
+      // 注意：这里使用非贪婪匹配(.*?)，确保能正确匹配嵌套标签
+      processedText = processedText.replace(/<think>[\s\S]*?<\/think>/g, '');
+      
+      // 清理任何多余的空行，确保格式美观
+      processedText = processedText.replace(/\n{3,}/g, '\n\n');
+      processedText = processedText.trim();
+      
       // 根据内容类型决定如何处理
       if (contentType && contentType.includes('application/json')) {
         // 如果是JSON格式，则尝试解析
         try {
-          const data = JSON.parse(responseText);
+          const data = JSON.parse(processedText);
           if (data.error) {
             throw new Error(data.error);
           } else if (data.comment) {
@@ -126,18 +137,18 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
             setComment(JSON.stringify(data));
           }
         } catch (parseError) {
-          // JSON解析失败，直接使用文本内容
-          console.warn('JSON解析失败，使用纯文本:', parseError);
-          setComment(responseText.trim());
+          // JSON解析失败，直接使用过滤后的文本内容
+          console.warn('JSON解析失败，使用过滤后的纯文本:', parseError);
+          setComment(processedText);
         }
       } else {
-        // 如果不是JSON格式，直接使用文本
-        setComment(responseText.trim());
+        // 如果不是JSON格式，直接使用过滤后的文本
+        setComment(processedText);
       }
-
+      
       // 缓存结果
-      if (comment) {
-        commentCache.current.set(cacheKey, comment);
+      if (processedText) {
+        commentCache.current.set(cacheKey, processedText);
       }
     } catch (err) {
       console.error('获取评论失败:', err);
@@ -148,7 +159,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
         console.warn('JSON解析错误，已忽略:', err.message);
       } else {
         // 其他错误正常显示
-        setError(err instanceof Error ? err.message : '生成评论失败，请稍后再试');
+        setError(err instanceof Error ? err.message : '热辣评论失败，请稍后再试');
       }
     } finally {
       clearInterval(progressInterval);
@@ -169,7 +180,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
               : 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 transform hover:scale-105 transition-all'
           }`}
         >
-          {isLoading ? '生成中...' : '✨ 生成热辣点评'}
+          {isLoading ? '点评中...' : '✨ 开始热辣点评'}
         </button>
       </div>
 
@@ -211,12 +222,18 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
             <span className="text-2xl mr-2">🔥</span>
             <h3 className="text-lg font-medium text-red-600">AI热辣点评</h3>
           </div>
-          <p className="text-gray-700 whitespace-pre-line break-words">{comment}</p>
+          <div className="text-gray-700 leading-relaxed">
+            {comment.split('\n\n').map((paragraph, index) => (
+              <p key={index} className="mb-3 break-words whitespace-pre-line">
+                {paragraph}
+              </p>
+            ))}
+          </div>
         </div>
       ) : (
         <div className="p-5 bg-gray-50 rounded-lg border border-gray-200 text-center text-gray-500">
           {bookmarks.length > 0 
-            ? '点击"生成点评"按钮，获取AI对你上网习惯的热辣点评'
+            ? '点击"点评"按钮，获取你的上网习惯热辣点评'
             : '请先上传书签，然后再生成点评'}
         </div>
       )}
