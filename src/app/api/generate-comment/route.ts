@@ -6,6 +6,8 @@ interface BookmarkData {
   category?: string;
 }
 
+export const runtime = 'edge'; // 使用Edge Runtime，通常有更长的执行时间
+
 export async function POST(request: Request) {
   try {
     const { bookmarks } = await request.json() as { bookmarks: BookmarkData[] };
@@ -111,7 +113,7 @@ async function generateAIComment(prompt: string): Promise<string> {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify(requestBody),
-          signal: AbortSignal.timeout(80000)
+          signal: AbortSignal.timeout(120000)
         });
         break;
       } catch (fetchError) {
@@ -136,8 +138,8 @@ async function generateAIComment(prompt: string): Promise<string> {
     }
 
     // 记录响应状态
-    console.log(`API响应状态: ${response.status} ${response.statusText}`);
-    console.log('API响应头:', JSON.stringify(Object.fromEntries(response.headers.entries())));
+    //console.log(`API响应状态: ${response.status} ${response.statusText}`);
+    //console.log('API响应头:', JSON.stringify(Object.fromEntries(response.headers.entries())));
 
     if (!response.ok) {
       const contentType = response.headers.get('Content-Type');
@@ -162,13 +164,13 @@ async function generateAIComment(prompt: string): Promise<string> {
     const responseText = await response.text();
     
     // 详细记录响应内容
-    console.log('API原始响应长度:', responseText.length);
-    console.log('API响应前100个字符:', JSON.stringify(responseText.substring(0, 100)));
-    console.log('API响应最后100个字符:', JSON.stringify(responseText.substring(responseText.length - 100)));
+    //console.log('API原始响应长度:', responseText.length);
+    //console.log('API响应前100个字符:', JSON.stringify(responseText.substring(0, 100)));
+    //console.log('API响应最后100个字符:', JSON.stringify(responseText.substring(responseText.length - 100)));
     
     // 检查是否有特殊字符
     const hexDump = Array.from(responseText.substring(0, 20)).map(c => c.charCodeAt(0).toString(16).padStart(2, '0')).join(' ');
-    console.log('响应前20个字符的十六进制表示:', hexDump);
+    //console.log('响应前20个字符的十六进制表示:', hexDump);
 
     if (!responseText || responseText.trim() === '') {
       console.error('API响应为空');
