@@ -65,7 +65,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
     const progressInterval = setInterval(() => {
       setProgress(prev => {
         // 慢慢增加到90%，剩下10%留给实际完成
-        const newProgress = prev + (5 * Math.random());
+        const newProgress = prev + (10 * Math.random());
         return Math.min(newProgress, 90);
       });
       
@@ -147,6 +147,13 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
       if (processedText) {
         commentCache.current.set(cacheKey, processedText);
       }
+
+      // API返回后立即完成进度
+      setProgress(100);
+      clearInterval(progressInterval);
+      
+      // 添加这一行，设置加载状态为false
+      setIsLoading(false);
     } catch (err) {
       console.error('获取评论失败:', err);
       
@@ -158,9 +165,10 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
         // 其他错误正常显示
         setError(err instanceof Error ? err.message : '热辣评论失败，请稍后再试');
       }
-    } finally {
-      clearInterval(progressInterval);
+      
+      // 确保在错误情况下也清除加载状态
       setIsLoading(false);
+      clearInterval(progressInterval);
     }
   };
 

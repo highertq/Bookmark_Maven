@@ -12,6 +12,14 @@ interface UploadBookmarkProps {
   onBookmarksProcessed?: (bookmarks: any[]) => void;
 }
 
+interface Bookmark {
+  title: string;
+  url: string;
+  category?: string;
+  date?: string; // 添加日期字段
+  add_date?: string; // HTML书签中可能有add_date属性
+}
+
 export default function UploadBookmark({ onBookmarksProcessed }: UploadBookmarkProps) {
   const [message, setMessage] = useState<string>('拖拽HTML书签文件到这里，或点击选择文件');
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -33,16 +41,42 @@ export default function UploadBookmark({ onBookmarksProcessed }: UploadBookmarkP
         return;
       }
       
-      setMessage(`成功解析 ${bookmarks.length} 个书签！`);
+      // 处理书签日期信息
+      const bookmarksWithDates = bookmarks.map((bookmark: Bookmark) => {
+        // 如果书签有add_date属性（Unix时间戳格式），将其转换为ISO格式
+        if (bookmark.add_date && !bookmark.date) {
+          // 书签文件中的add_date通常是秒级Unix时间戳
+          const timestamp = parseInt(bookmark.add_date);
+          if (!isNaN(timestamp)) {
+            // 转换为毫秒级时间戳并转为ISO格式
+            bookmark.date = new Date(timestamp * 1000).toISOString();
+          }
+        }
+        
+        // 如果仍然没有日期信息，添加随机日期
+        if (!bookmark.date) {
+          bookmark.date = generateRandomPastDate(730); // 过去两年内
+        }
+        
+        return bookmark;
+      });
+      
+      // 随机选取20个书签（如果总数超过20个）
+      const selectedBookmarks = bookmarksWithDates.length <= 20 
+        ? bookmarksWithDates 
+        : getRandomSample(bookmarksWithDates, 20);
+      
+      setMessage(`成功解析 ${bookmarksWithDates.length} 个书签，随机选取了 ${selectedBookmarks.length} 个进行分析！`);
+      
       // 存储解析的书签
-      setParsedBookmarks(bookmarks);
+      setParsedBookmarks(selectedBookmarks);
       
       // 显示分析组件
       setShowAnalytics(true);
       
       // 安全地调用回调函数，检查它是否存在
       if (typeof onBookmarksProcessed === 'function') {
-        onBookmarksProcessed(bookmarks);
+        onBookmarksProcessed(selectedBookmarks);
       }
     } catch (error) {
       console.error('解析书签失败:', error);
@@ -51,6 +85,20 @@ export default function UploadBookmark({ onBookmarksProcessed }: UploadBookmarkP
       setIsLoading(false);
     }
   }, [onBookmarksProcessed]);
+
+  // 生成过去n天内的随机日期
+  function generateRandomPastDate(daysBack: number): string {
+    const today = new Date();
+    const pastDate = new Date(today);
+    pastDate.setDate(today.getDate() - Math.floor(Math.random() * daysBack));
+    return pastDate.toISOString();
+  }
+  
+  // 从数组中随机抽取n个元素
+  function getRandomSample<T>(array: T[], n: number): T[] {
+    const shuffled = [...array].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, n);
+  }
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) {

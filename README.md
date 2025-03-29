@@ -34,3 +34,15 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## 环境配置
+
+本项目需要配置阿里云百炼API密钥才能正常运行。请按照以下步骤进行配置：
+
+1. 在项目根目录创建`.env.local`文件
+2. 添加以下内容：
+```
+DASHSCOPE_API_KEY=你的API密钥
+```
+
+注意：`.env.local`文件已添加到`.gitignore`中，不会被提交到仓库。
