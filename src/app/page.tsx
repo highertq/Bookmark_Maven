@@ -7,7 +7,7 @@ export default function Home() {
       <header className="bg-white shadow-sm">
         <div className="container mx-auto px-4 py-6">
           <h1 className="text-2xl font-bold text-gray-900">书签热辣点评</h1>
-          <p className="text-gray-600 mt-1">上传书签，获取AI对你上网习惯的热辣点评</p>
+          <p className="text-gray-600 mt-1">上传书签，获取AI对你上网习惯的热辣点评和数据分析</p>
         </div>
       </header>
 
@@ -18,7 +18,7 @@ export default function Home() {
         </div>
       </main>
       <footer className="py-6 text-center text-gray-500 text-sm">
-        <p>Copyright © 2023-{new Date().getFullYear()} 书签热评</p>
+        <p>Copyright © {new Date().getFullYear()} 书签热评</p>
       </footer>
     </div>
   );

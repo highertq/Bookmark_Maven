@@ -17,6 +17,16 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
   
   const commentCache = useRef(new Map());
 
+  // 获取网站图标
+  const getFavicon = (url: string) => {
+    try {
+      const urlObj = new URL(url);
+      return `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=64`;
+    } catch {
+      return '/globe.svg'; // 默认图标
+    }
+  };
+
   // 预设一些有趣的评论模板
   const fallbackComments = [
     "看了你的书签列表，我怀疑你是靠随机点击收集网址的。这些杂乱无章的网站散发着「半途而废爱好者」的气息。",
@@ -77,9 +87,9 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
     }, 2000);
     
     try {
-      // 使用AbortController实现客户端超时控制
       const controller = new AbortController();
-      const timeoutController = setTimeout(() => controller.abort(), 20000);
+      // 增加超时时间到3分钟
+      const timeoutController = setTimeout(() => controller.abort(), 180000);
       
       const response = await fetch('/api/generate-comment', {
         method: 'POST',
@@ -92,34 +102,37 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
       
       clearTimeout(timeoutController);
       
+      // 检查内容类型
+      const contentType = response.headers.get('content-type');
       const responseText = await response.text();
       console.log('API原始响应:', responseText);
-
+      
       // 检查是否包含错误关键词
       if (responseText.includes('FUNCTION_INVOCATION_TIMEOUT') || 
           responseText.includes('An error occurred with your deployment')) {
         throw new Error('服务器处理超时，请稍后再试');
       }
-
-      // 尝试解析为JSON
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error('JSON解析失败，作为纯文本处理:', parseError);
-        // 纯文本处理
-        setComment(responseText.trim());
-        setIsLoading(false);
-        return;
-      }
-
-      // JSON处理
-      if (data.error) {
-        throw new Error(data.error);
-      } else if (data.comment) {
-        setComment(data.comment);
+      
+      // 根据内容类型决定如何处理
+      if (contentType && contentType.includes('application/json')) {
+        // 如果是JSON格式，则尝试解析
+        try {
+          const data = JSON.parse(responseText);
+          if (data.error) {
+            throw new Error(data.error);
+          } else if (data.comment) {
+            setComment(data.comment);
+          } else {
+            setComment(JSON.stringify(data));
+          }
+        } catch (parseError) {
+          // JSON解析失败，直接使用文本内容
+          console.warn('JSON解析失败，使用纯文本:', parseError);
+          setComment(responseText.trim());
+        }
       } else {
-        setComment(JSON.stringify(data));
+        // 如果不是JSON格式，直接使用文本
+        setComment(responseText.trim());
       }
 
       // 缓存结果
@@ -129,16 +142,12 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
     } catch (err) {
       console.error('获取评论失败:', err);
       
-      // 如果是超时错误，使用预设评论
-      if (err instanceof Error && (
-        err.message.includes('超时') || 
-        err.name === 'AbortError' || 
-        err.message.includes('timeout')
-      )) {
-        const fallbackComment = fallbackComments[Math.floor(Math.random() * fallbackComments.length)];
-        setComment(`[API超时，使用备用评论] ${fallbackComment}`);
-        setError('API请求超时，已使用备用评论。你也可以稍后再试。');
+      // 隐藏技术性错误，显示友好的错误消息
+      if (err instanceof Error && err.message.includes('JSON')) {
+        // 如果是JSON解析错误，不要显示在用户界面上
+        console.warn('JSON解析错误，已忽略:', err.message);
       } else {
+        // 其他错误正常显示
         setError(err instanceof Error ? err.message : '生成评论失败，请稍后再试');
       }
     } finally {
@@ -154,9 +163,13 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
         <button
           onClick={generateComment}
           disabled={isLoading || bookmarks.length === 0}
-          className={`px-4 py-2 rounded-md text-white ${isLoading ? 'bg-gray-400 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600'}`}
+          className={`px-6 py-2.5 rounded-md text-white text-base font-medium shadow-md ${
+            isLoading 
+              ? 'bg-gray-400 cursor-not-allowed' 
+              : 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 transform hover:scale-105 transition-all'
+          }`}
         >
-          {isLoading ? '生成中...' : '生成点评'}
+          {isLoading ? '生成中...' : '✨ 生成热辣点评'}
         </button>
       </div>
 
@@ -172,9 +185,23 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
             <span className="text-2xl mr-2">📅</span>
             <h3 className="text-lg font-medium text-blue-700">最早收藏的书签</h3>
           </div>
-          <p className="text-gray-700 mb-1"><span className="font-medium">标题:</span> {earliestBookmark.bookmark.title}</p>
+          <div className="flex items-center mb-2">
+            <img 
+              src={getFavicon(earliestBookmark.bookmark.url)} 
+              alt="" 
+              className="w-5 h-5 mr-2" 
+            />
+            <a 
+              href={earliestBookmark.bookmark.url} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline font-medium"
+            >
+              {earliestBookmark.bookmark.title}
+            </a>
+          </div>
           <p className="text-gray-700 mb-1"><span className="font-medium">收藏日期:</span> {earliestBookmark.bookmark.addDateFormatted}</p>
-          <p className="text-gray-700"><span className="font-medium">距今时间:</span> {earliestBookmark.daysAgo} 天</p>
+          <p className="text-gray-700"><span className="font-medium">距今:</span> {earliestBookmark.daysAgo} 天</p>
         </div>
       )}
 
@@ -184,7 +211,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
             <span className="text-2xl mr-2">🔥</span>
             <h3 className="text-lg font-medium text-red-600">AI热辣点评</h3>
           </div>
-          <p className="text-gray-700 whitespace-pre-line">{comment}</p>
+          <p className="text-gray-700 whitespace-pre-line break-words">{comment}</p>
         </div>
       ) : (
         <div className="p-5 bg-gray-50 rounded-lg border border-gray-200 text-center text-gray-500">

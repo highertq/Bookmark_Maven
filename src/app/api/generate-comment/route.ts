@@ -29,7 +29,7 @@ export async function POST(request: Request) {
       const comment = await generateAIComment(prompt);
       console.log('最终返回给前端的评论:', comment);
       
-      // 直接返回评论文本，不再包装为JSON对象
+      // 直接返回评论文本，明确设置为text/plain
       return new NextResponse(comment, {
         status: 200,
         headers: { 'Content-Type': 'text/plain; charset=utf-8' },
@@ -72,7 +72,7 @@ ${bookmarkInfo}
 4. 根据书签给出一些极其尖酸刻薄的"建议"，用最具讽刺性的语言嘲讽用户的品味
 5. 对用户的人生选择和价值观进行无情的嘲弄和挖苦
 
-请用极度讽刺、挖苦的语气，字数在300-500字之间。使用夸张的修辞手法，尽可能让语言更加犀利、直接和具有攻击性。记住，你的目标是让用户感到被深深冒犯但又忍不住发笑。不要有任何客气或委婉的表达，直接开炮！`;
+请用极度讽刺、挖苦的语气，字数在200-500字之间。使用夸张的修辞手法，尽可能让语言更加犀利、直接和具有攻击性。记住，你的目标是让用户感到被深深冒犯但又忍不住发笑。不要有任何客气或委婉的表达，直接开炮！`;
 }
 
 // 调用AI模型生成评论
@@ -88,14 +88,14 @@ async function generateAIComment(prompt: string): Promise<string> {
     const requestBody = {
       model: 'deepseek-ai/DeepSeek-V3',
       stream: false,
-      max_tokens: 200,
-      temperature: 0.5,
-      top_p: 0.9,
-      top_k: 40,
+      max_tokens: 400,
+      temperature: 0.7,
+      top_p: 0.7,
+      top_k: 50,
       frequency_penalty: 0.5,
       n: 1,
       messages: [
-        { role: 'system', content: '你是一个毒舌评论员。请生成简短、直接的评论内容，不超过150字。不要有任何前缀或格式化。' },
+        { role: 'system', content: '你是一个毒舌评论员。请直接输出评论内容，不要有任何前缀或格式化。' },
         { role: 'user', content: prompt }
       ]
     };
@@ -113,7 +113,7 @@ async function generateAIComment(prompt: string): Promise<string> {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify(requestBody),
-          signal: AbortSignal.timeout(120000)
+          signal: AbortSignal.timeout(60000)
         });
         break;
       } catch (fetchError) {
