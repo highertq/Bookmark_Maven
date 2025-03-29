@@ -66,7 +66,7 @@ export default function UploadBookmark({ onBookmarksProcessed }: UploadBookmarkP
         ? bookmarksWithDates 
         : getRandomSample(bookmarksWithDates, 20);
       
-      setMessage(`成功解析 ${bookmarksWithDates.length} 个书签，随机选取了 ${selectedBookmarks.length} 个进行分析！`);
+      setMessage(`成功解析 ${bookmarksWithDates.length} 个书签，可以进行分析了！`);
       
       // 存储解析的书签
       setParsedBookmarks(selectedBookmarks);

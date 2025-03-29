@@ -135,7 +135,7 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
         
         return (
           <div key={index} className="bg-blue-50 rounded-lg border border-blue-100 p-3 text-center">
-            <div className="text-lg font-bold text-blue-800">{year}</div>
+            <div className="text-lg font-bold text-blue-800">{year}年</div>
             <div className="mt-1 text-sm text-gray-600">书签数量</div>
             <div className="mt-1 font-bold text-xl text-blue-600">{count}</div>
             <div className="mt-2 w-full h-2 bg-gray-200 rounded-full overflow-hidden">

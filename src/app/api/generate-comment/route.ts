@@ -33,11 +33,11 @@ export async function POST(request: Request) {
       });
     }
 
-    console.log('收到的书签数据:', JSON.stringify(bookmarks, null, 2));
+    //console.log('收到的书签数据:', JSON.stringify(bookmarks, null, 2));
     // 构建提示词
     const prompt = generatePrompt(bookmarks);
-    console.log('生成的提示词:', prompt);
-
+    //console.log('生成的提示词:', prompt);
+    
     try {
       // 调用AI模型生成评论
       const comment = await generateAIComment(prompt);
