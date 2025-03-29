@@ -1,6 +1,6 @@
 {
   "functions": {
-    "api/generate-comment/**": {
+    "src/app/api/**/*.ts": {
       "maxDuration": 20
     }
   }
