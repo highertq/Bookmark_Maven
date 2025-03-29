@@ -38,41 +38,34 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
         body: JSON.stringify({ bookmarks }),
       });
 
-      // 根据您的建议，先获取响应文本
       const responseText = await response.text();
       console.log('API原始响应:', responseText);
+
+      // 检查是否包含错误关键词
+      if (responseText.includes('FUNCTION_INVOCATION_TIMEOUT') || 
+          responseText.includes('An error occurred with your deployment')) {
+        throw new Error('服务器处理超时，请稍后再试');
+      }
 
       // 尝试解析为JSON
       let data;
       try {
-        // 尝试直接解析响应文本
         data = JSON.parse(responseText);
-        console.log('成功解析JSON响应:', data);
-        
-        // 如果返回的是有效的JSON对象且包含comment字段
-        if (data && data.comment) {
-          setComment(data.comment);
-        } 
-        // 如果返回的是纯文本或普通字符串
-        else if (typeof data === 'string') {
-          setComment(data);
-        }
-        // 如果JSON中没有直接的comment字段，检查是否是API标准响应格式
-        else if (data.choices && data.choices.length > 0 && data.choices[0].message?.content) {
-          setComment(data.choices[0].message.content);
-        }
-        // 否则将整个JSON作为文本展示
-        else {
-          setComment(JSON.stringify(data));
-        }
       } catch (parseError) {
         console.error('JSON解析失败，作为纯文本处理:', parseError);
-        // 如果解析失败，直接使用响应文本
-        if (responseText && responseText.trim()) {
-          setComment(responseText.trim());
-        } else {
-          throw new Error('服务器返回了空的响应');
-        }
+        // 纯文本处理
+        setComment(responseText.trim());
+        setIsLoading(false);
+        return;
+      }
+
+      // JSON处理
+      if (data.error) {
+        throw new Error(data.error);
+      } else if (data.comment) {
+        setComment(data.comment);
+      } else {
+        setComment(JSON.stringify(data));
       }
     } catch (err) {
       console.error('获取评论失败:', err);

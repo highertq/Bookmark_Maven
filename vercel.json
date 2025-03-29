@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/generate-comment/**": {
+      "maxDuration": 20
+    }
+  }
+} 
