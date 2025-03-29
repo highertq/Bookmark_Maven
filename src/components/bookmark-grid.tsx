@@ -1,11 +1,18 @@
 'use client';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
-import { getAllBookmarks, getAllCategories } from '@/lib/supabase';
-import type { Tables } from '@/lib/supabase';
+
+// 定义书签和分类的类型
+type Bookmark = {
+  id: string;
+  title: string;
+  url: string;
+  icon?: string;
+  category?: string;
+};
 
 export default function BookmarkGrid() {
-  const [bookmarks, setBookmarks] = useState<Tables['bookmarks']['Row'][]>([]);
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
   const [categories, setCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -15,18 +22,28 @@ export default function BookmarkGrid() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        // 获取所有分类
-        const categoriesData = await getAllCategories();
-        setCategories(categoriesData);
-
-        // 获取书签
-        const { data, error } = await getAllBookmarks();
-        if (error) {
-          console.error('获取书签失败:', error);
-          return;
-        }
-
-        setBookmarks(data || []);
+        // 使用模拟数据替代 Supabase 数据
+        // 实际项目中，您可以从 API 或本地存储获取数据
+        const mockBookmarks: Bookmark[] = [
+          // 这里可以添加一些示例书签
+          // 例如:
+          /*
+          {
+            id: '1',
+            title: '示例书签 1',
+            url: 'https://example.com',
+            category: '工作'
+          },
+          */
+        ];
+        
+        // 提取所有唯一的分类
+        const uniqueCategories = Array.from(
+          new Set(mockBookmarks.map(b => b.category).filter(Boolean) as string[])
+        );
+        
+        setCategories(uniqueCategories);
+        setBookmarks(mockBookmarks);
       } catch (error) {
         console.error('加载数据出错:', error);
       } finally {
@@ -132,24 +149,16 @@ export default function BookmarkGrid() {
               className="block p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow"
             >
               <div className="flex items-start space-x-3">
-                {/* <img
+                <Image
                   src={bookmark.icon || getFavicon(bookmark.url)}
                   alt=""
-                  className="w-6 h-6 mt-1"
+                  width={24}
+                  height={24}
+                  className="mt-1"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = '/globe.svg';
                   }}
-                /> */}
-              <Image
-                src={bookmark.icon || getFavicon(bookmark.url)}
-                alt="" // 建议填写有意义的 alt 文本（SEO 要求）
-                width={24}  // 必须指定（单位：px，与 className 中的 w-6 对应 6*4=24）
-                height={24} // 必须指定（与 className 中的 h-6 对应）
-                className="mt-1" // 移除了 w-6 h-6，因为 width/height 已指定
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = '/globe.svg';
-                }}
-              />
+                />
                 <div>
                   <h3 className="font-medium text-gray-900 line-clamp-2">{bookmark.title}</h3>
                   <p className="text-sm text-gray-500 mt-1 line-clamp-1">{bookmark.url}</p>
