@@ -3,5 +3,9 @@
     "src/app/api/**/*": {
       "maxDuration": 120
     }
-  }
+  },
+  "buildCommand": "next build",
+  "devCommand": "next dev",
+  "outputDirectory": ".next",
+  "framework": "nextjs"
 } 
