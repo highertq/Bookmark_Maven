@@ -191,7 +191,7 @@ async function generateAIComment(prompt: string): Promise<string> {
       }
     } catch (parseError) {
       console.error('JSON解析失败:', parseError instanceof Error ? parseError.message : '未知错误');
-      console.log('尝试解析的文本前200个字符:', JSON.stringify(cleanedText).substring(0, 200));
+      console.log('尝试解析的文本前200个字符:', JSON.stringify(responseText).substring(0, 200));
       
       // 尝试查找可能的JSON部分
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
