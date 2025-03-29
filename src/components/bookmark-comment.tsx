@@ -38,12 +38,25 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
         body: JSON.stringify({ bookmarks }),
       });
 
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error('服务器返回了非JSON格式的响应');
-      }
+      // 获取响应文本，然后尝试解析为 JSON
+      const responseText = await response.text();
+      console.log('API响应内容:', responseText.substring(0, 100)); // 记录响应内容前100个字符
       
-      const data = await response.json();
+      let data;
+      try {
+        // 尝试解析 JSON
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('解析响应失败:', parseError);
+        // 如果不是 JSON，则作为纯文本处理
+        if (responseText && responseText.trim()) {
+          setComment(responseText.trim());
+          setIsLoading(false);
+          return; // 直接返回，不继续处理
+        } else {
+          throw new Error('服务器返回了无效的响应');
+        }
+      }
 
       if (!response.ok) {
         const errorMsg = data.error || '生成评论失败';
@@ -51,11 +64,15 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
         throw new Error(`${errorMsg}${errorDetails ? `\n${errorDetails}` : ''}`);
       }
 
-      if (!data.comment) {
-        throw new Error('服务器返回了空的评论内容');
+      if (data.comment) {
+        // 正常的 JSON 响应处理
+        setComment(data.comment);
+      } else if (typeof data === 'string') {
+        // 直接返回的文本
+        setComment(data);
+      } else {
+        throw new Error('服务器返回了无效的评论内容');
       }
-
-      setComment(data.comment);
     } catch (err) {
       console.error('获取评论失败:', err);
       setError(err instanceof Error ? err.message : '生成评论失败，请稍后再试');

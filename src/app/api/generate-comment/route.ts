@@ -24,20 +24,35 @@ export async function POST(request: Request) {
       const comment = await generateAIComment(prompt);
       console.log('最终返回给前端的评论:', comment);
       
-      // 确保返回一个有效的 JSON 对象
-      return NextResponse.json({ comment }, { status: 200 });
+      // 明确设置响应头和状态码，确保返回 JSON 格式
+      return new NextResponse(JSON.stringify({ comment }), {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
     } catch (aiError) {
       console.error('AI模型调用出错:', aiError);
       // 返回更具体的错误信息
       const errorMessage = aiError instanceof Error ? aiError.message : '生成评论失败';
-      return NextResponse.json({
+      return new NextResponse(JSON.stringify({
         error: errorMessage,
         details: '调用AI模型时出错，请稍后再试或联系管理员'
-      }, { status: 503 });
+      }), {
+        status: 503,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
     }
   } catch (error) {
     console.error('生成评论出错:', error);
-    return NextResponse.json({ error: '处理请求失败' }, { status: 500 });
+    return new NextResponse(JSON.stringify({ error: '处理请求失败' }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
   }
 }
 
