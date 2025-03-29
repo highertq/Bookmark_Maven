@@ -1,169 +1,168 @@
 'use client';
 
-import { useState, useRef, DragEvent, ChangeEvent } from 'react';
-import { parseBookmarks, extractAllBookmarks, Bookmark } from '@/lib/bookmark-parser';
-import BookmarkComment from './bookmark-comment';
+import { useState, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { parseBookmarks, extractAllBookmarks } from '@/lib/bookmark-parser';
+import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
+import ExportHelpDialog from './export-help-dialog';
 import BookmarkAnalytics from './bookmark-analytics';
+import BookmarkComment from './bookmark-comment';
 
-interface MessageState {
-  text: string;
-  type: 'info' | 'success' | 'error';
+interface UploadBookmarkProps {
+  onBookmarksProcessed?: (bookmarks: any[]) => void;
 }
 
-export default function UploadBookmark() {
-  const [isDragging, setIsDragging] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
-  const [message, setMessage] = useState<MessageState | null>(null);
-  const [parsedBookmarks, setParsedBookmarks] = useState<Bookmark[]>([]);
-  const [showAnalytics, setShowAnalytics] = useState(false);
-  
-  const fileInputRef = useRef<HTMLInputElement>(null);
+export default function UploadBookmark({ onBookmarksProcessed }: UploadBookmarkProps) {
+  const [message, setMessage] = useState<string>('拖拽HTML书签文件到这里，或点击选择文件');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [showHelpDialog, setShowHelpDialog] = useState<boolean>(false);
+  const [parsedBookmarks, setParsedBookmarks] = useState<any[]>([]);
+  const [showAnalytics, setShowAnalytics] = useState<boolean>(false);
 
-  // 处理书签内容
-  const processBookmarkContent = (content: string) => {
+  const processBookmarkFile = useCallback(async (content: string) => {
+    setIsLoading(true);
+    setMessage('正在解析书签...');
+    
     try {
-      // 解析书签
+      // 解析书签树，然后提取所有书签项
       const bookmarkTree = parseBookmarks(content);
       const bookmarks = extractAllBookmarks(bookmarkTree);
       
       if (bookmarks.length === 0) {
-        setMessage({ text: '未找到任何书签', type: 'error' });
+        setMessage('未找到有效的书签数据，请确认文件格式正确');
         return;
       }
-
-      // 设置解析后的书签
-      setParsedBookmarks(bookmarks);
-      setMessage({ 
-        text: `成功解析 ${bookmarks.length} 个书签，可以生成热辣点评了！`, 
-        type: 'success' 
-      });
       
-      // 自动显示分析
+      setMessage(`成功解析 ${bookmarks.length} 个书签！`);
+      // 存储解析的书签
+      setParsedBookmarks(bookmarks);
+      
+      // 显示分析组件
       setShowAnalytics(true);
+      
+      // 安全地调用回调函数，检查它是否存在
+      if (typeof onBookmarksProcessed === 'function') {
+        onBookmarksProcessed(bookmarks);
+      }
     } catch (error) {
-      console.error('处理书签内容出错:', error);
-      setMessage({ text: '处理书签内容时出错', type: 'error' });
+      console.error('解析书签失败:', error);
+      setMessage(`解析书签失败: ${error instanceof Error ? error.message : '未知错误'}`);
+    } finally {
+      setIsLoading(false);
     }
-  };
-  
-  // 处理文件上传
-  const processFile = async (file: File) => {
-    // 检查文件类型
-    if (file.type !== 'text/html' && !file.name.endsWith('.html')) {
-      setMessage({ text: '请上传HTML格式的书签文件', type: 'error' });
+  }, [onBookmarksProcessed]);
+
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    if (acceptedFiles.length === 0) {
+      setMessage('请选择一个有效的HTML文件');
       return;
     }
 
-    setIsUploading(true);
-    setMessage({ text: '正在处理书签文件...', type: 'info' });
+    const file = acceptedFiles[0];
+    
+    // 检查文件类型
+    if (!file.name.endsWith('.html') && !file.type.includes('html')) {
+      setMessage('请选择一个HTML格式的书签文件');
+      return;
+    }
+
+    setMessage(`正在读取文件: ${file.name}...`);
+    setIsLoading(true);
 
     try {
-      // 读取文件内容
       const content = await file.text();
-      processBookmarkContent(content);
+      await processBookmarkFile(content);
     } catch (error) {
-      console.error('处理书签文件出错:', error);
-      setMessage({ text: '处理书签文件时出错', type: 'error' });
-    } finally {
-      setIsUploading(false);
+      console.error('读取文件失败:', error);
+      setMessage(`读取文件失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      setIsLoading(false);
     }
-  };
+  }, [processBookmarkFile]);
 
-  // 处理拖放
-  const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(true);
-  };
-
-  const handleDragLeave = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-  };
-
-  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-      processFile(files[0]);
-    }
-  };
-
-  // 处理文件选择
-  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      processFile(files[0]);
-    }
-  };
-
-  // 触发文件选择对话框
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
-  };
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
+    onDrop,
+    accept: {
+      'text/html': ['.html', '.htm'],
+    },
+    maxFiles: 1,
+    disabled: isLoading
+  });
 
   return (
-    <div>
-      <div
-        className={`border-2 border-dashed rounded-lg p-8 text-center ${
-          isDragging ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
-        } transition-colors duration-200`}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
-        onClick={triggerFileInput}
-      >
-        <input
-          type="file"
-          ref={fileInputRef}
-          onChange={handleFileSelect}
-          accept=".html"
-          className="hidden"
-        />
-        <div className="mx-auto w-16 h-16 mb-4 text-gray-400">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-          </svg>
+    <div className="w-full">
+      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-semibold">上传书签文件</h2>
+          <button
+            onClick={() => setShowHelpDialog(true)}
+            className="text-blue-600 hover:text-blue-800 flex items-center"
+            title="查看如何导出书签"
+          >
+            <QuestionMarkCircleIcon className="h-5 w-5 mr-1" />
+            <span>如何导出书签?</span>
+          </button>
         </div>
-        <p className="text-lg text-gray-700 mb-2">
-          {isDragging ? '放开以上传书签' : '拖放书签HTML文件至此或点击上传'}
-        </p>
-        <p className="text-sm text-gray-500">
-          支持浏览器导出的书签HTML文件
-        </p>
-      </div>
 
-      {message && (
-        <div className={`mt-4 p-3 rounded-md ${
-          message.type === 'info' ? 'bg-blue-50 text-blue-700' :
-          message.type === 'success' ? 'bg-green-50 text-green-700' :
-          'bg-red-50 text-red-700'
-        }`}>
-          {message.text}
-        </div>
-      )}
-
-      {parsedBookmarks.length > 0 && (
-        <div className="mt-6">
-          <div className="mb-2 flex justify-between items-center">
-            <h3 className="text-lg font-semibold">成功解析 {parsedBookmarks.length} 个书签</h3>
-            <button
-              onClick={() => setShowAnalytics(!showAnalytics)}
-              className="text-blue-600 text-sm underline"
+        <div 
+          {...getRootProps()} 
+          className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+            isDragActive 
+              ? 'border-blue-500 bg-blue-50' 
+              : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+          } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          <input {...getInputProps()} />
+          
+          <div className="flex flex-col items-center justify-center">
+            <svg 
+              className={`w-16 h-16 mb-4 ${isDragActive ? 'text-blue-500' : 'text-gray-400'}`} 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24" 
+              xmlns="http://www.w3.org/2000/svg"
             >
-              {showAnalytics ? '隐藏分析' : '显示详细分析'}
-            </button>
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth="2" 
+                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+              />
+            </svg>
+            
+            <p className={`text-lg ${isLoading ? 'text-blue-600 font-medium' : ''}`}>
+              {message}
+            </p>
+            
+            {isLoading ? (
+              <div className="mt-4 w-16 h-16 border-t-4 border-blue-500 border-solid rounded-full animate-spin"></div>
+            ) : (
+              <p className="mt-2 text-sm text-gray-500">
+                支持从Chrome、Firefox、Edge等浏览器导出的书签HTML文件
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* 导出帮助弹窗 */}
+        <ExportHelpDialog
+          isOpen={showHelpDialog}
+          onClose={() => setShowHelpDialog(false)}
+        />
+      </div>
+      
+      {/* 当成功解析书签后显示分析和评论组件 */}
+      {showAnalytics && parsedBookmarks.length > 0 && (
+        <>
+          {/* 书签分析组件 */}
+          <div className="mb-6">
+            <BookmarkAnalytics bookmarks={parsedBookmarks} />
           </div>
           
-          {showAnalytics && (
-            <div className="mb-6">
-              <BookmarkAnalytics bookmarks={parsedBookmarks} />
-            </div>
-          )}
-          
-          <BookmarkComment bookmarks={parsedBookmarks} />
-        </div>
+          {/* 书签评论组件 */}
+          <div>
+            <BookmarkComment bookmarks={parsedBookmarks} />
+          </div>
+        </>
       )}
     </div>
   );

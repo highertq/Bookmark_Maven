@@ -23,15 +23,12 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
   const duplicates = findDuplicateBookmarks(bookmarks);
   const duplicateCount = Object.keys(duplicates).length;
   
-  // 获取网站图标
-  const getFavicon = (url: string) => {
-    try {
-      const urlObj = new URL(url);
-      return `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=64`;
-    } catch {
-      return '/globe.svg'; // 默认图标
-    }
-  };
+  // 替代方案：完全使用统一的图标
+  const BookmarkIcon = () => (
+    <svg className="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+    </svg>
+  );
   
   return (
     <div className="bg-white rounded-lg shadow p-4">
@@ -166,11 +163,7 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
                       rel="noopener noreferrer"
                       className="flex items-center p-2 bg-gray-50 hover:bg-gray-100 rounded border border-gray-200"
                     >
-                      <img 
-                        src={getFavicon(bookmark.url)} 
-                        alt="" 
-                        className="w-5 h-5 mr-2" 
-                      />
+                      <BookmarkIcon />
                       <span className="text-blue-600 truncate">{bookmark.title}</span>
                     </a>
                   ))}
@@ -224,7 +217,10 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
                 <div key={index} className="flex items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
                   <div className="flex-shrink-0 mr-3">
                     <img 
-                      src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`} 
+                      src={`https://www.google.com/s2/favicons?domain=${domain}&sz=64`}
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/globe.svg';
+                      }} 
                       alt="" 
                       className="w-6 h-6" 
                     />
@@ -267,11 +263,7 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
                 {Object.entries(duplicates).slice(0, 10).map(([url, bookmarkList], index) => (
                   <div key={index} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
                     <div className="flex items-center mb-2">
-                      <img 
-                        src={getFavicon(`https://${url}`)} 
-                        alt="" 
-                        className="w-5 h-5 mr-2" 
-                      />
+                      <BookmarkIcon />
                       <a 
                         href={`https://${url}`} 
                         target="_blank" 

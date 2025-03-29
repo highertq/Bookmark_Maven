@@ -17,15 +17,12 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
   
   const commentCache = useRef(new Map());
 
-  // 获取网站图标
-  const getFavicon = (url: string) => {
-    try {
-      const urlObj = new URL(url);
-      return `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=64`;
-    } catch {
-      return '/globe.svg'; // 默认图标
-    }
-  };
+  // 替换 getFavicon 函数为使用统一图标组件
+  const BookmarkIcon = () => (
+    <svg className="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
+    </svg>
+  );
 
   // 预设一些有趣的评论模板
   const fallbackComments = [
@@ -197,11 +194,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
             <h3 className="text-lg font-medium text-blue-700">最早收藏的书签</h3>
           </div>
           <div className="flex items-center mb-2">
-            <img 
-              src={getFavicon(earliestBookmark.bookmark.url)} 
-              alt="" 
-              className="w-5 h-5 mr-2" 
-            />
+            <BookmarkIcon />
             <a 
               href={earliestBookmark.bookmark.url} 
               target="_blank" 
