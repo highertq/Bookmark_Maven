@@ -71,11 +71,11 @@ async function generateAIComment(prompt: string): Promise<string> {
 
     console.log('开始调用硅基流动API...');
 
-    // 构建请求体
+    // 构建请求体 - 根据硅基流动API文档格式
     const requestBody = {
       model: 'deepseek-ai/DeepSeek-V3',
       stream: false,
-      max_tokens: 1024,
+      max_tokens: 512,
       temperature: 0.7,
       top_p: 0.7,
       top_k: 50,
@@ -178,38 +178,105 @@ async function generateAIComment(prompt: string): Promise<string> {
       throw new Error('API响应为空');
     }
     
-    // 检查响应文本是否以有效的JSON字符开始
-    if (responseText.trim()[0] !== '{' && responseText.trim()[0] !== '[') {
-      console.error('API响应不是有效的JSON格式:', responseText);
-      throw new Error(`API响应不是有效的JSON格式: ${responseText.substring(0, 100)}`);
-    }
+    // 增强的响应验证和处理
+    const trimmedText = responseText.trim();
+    console.log('处理前的响应文本长度:', trimmedText.length);
+    console.log('响应文本前20个字符:', JSON.stringify(trimmedText.substring(0, 20)));
     
-    try {
-      data = JSON.parse(responseText);
-    } catch (e) {
-      console.error('解析API响应失败:', e, '原始响应:', responseText);
-      // 尝试清理响应文本中可能存在的BOM或其他特殊字符
+    // 检查是否有BOM或其他不可见字符
+    const hexView = Array.from(trimmedText.substring(0, 10)).map(c => c.charCodeAt(0).toString(16).padStart(4, '0')).join(' ');
+    console.log('响应文本前10个字符的十六进制表示:', hexView);
+    
+    // 更严格的JSON格式检查
+    if (trimmedText[0] !== '{' && trimmedText[0] !== '[') {
+      console.error('API响应不是有效的JSON格式 (首字符检查):', trimmedText.substring(0, 100));
+      
+      // 尝试在文本中查找JSON开始的位置
+      const jsonStartIndex = trimmedText.indexOf('{');
+      if (jsonStartIndex > 0) {
+        console.log(`发现JSON开始于位置 ${jsonStartIndex}，尝试从此处解析`);
+        const possibleJson = trimmedText.substring(jsonStartIndex);
+        try {
+          data = JSON.parse(possibleJson);
+          console.log('从检测到的JSON开始位置解析成功');
+        } catch (e) {
+          console.error('从检测到的JSON开始位置解析失败:', e);
+          throw new Error(`API响应格式异常，无法解析: ${trimmedText.substring(0, 100)}`);
+        }
+      } else {
+        throw new Error(`API响应不是有效的JSON格式: ${trimmedText.substring(0, 100)}`);
+      }
+    } else {
+      // 标准JSON解析流程
       try {
-        const cleanedText = responseText.replace(/^\s+|\s+$/g, '').replace(/[\ufeff\u200b]/g, '');
-        console.log('尝试清理后的响应:', cleanedText);
-        data = JSON.parse(cleanedText);
-        console.log('清理后解析成功');
-      } catch (cleanError) {
-        console.error('清理后仍然无法解析:', cleanError);
-        throw new Error(`无法解析API响应: ${responseText.substring(0, 100)}`);
+        data = JSON.parse(trimmedText);
+      } catch (e) {
+        console.error('解析API响应失败:', e, '原始响应前100个字符:', trimmedText.substring(0, 100));
+        
+        // 尝试多种清理方法
+        try {
+          // 方法1: 移除BOM和零宽字符
+          const cleanedText1 = trimmedText.replace(/[\ufeff\u200b\u0000]/g, '');
+          console.log('清理方法1后的文本前20个字符:', JSON.stringify(cleanedText1.substring(0, 20)));
+          
+          try {
+            data = JSON.parse(cleanedText1);
+            console.log('清理方法1解析成功');
+            return data;
+          } catch (e1) {
+            console.log('清理方法1解析失败，尝试方法2');
+            
+            // 方法2: 查找可能的JSON部分
+            const jsonMatch = trimmedText.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              const extractedJson = jsonMatch[0];
+              console.log('提取的可能JSON:', extractedJson.substring(0, 50) + '...');
+              
+              try {
+                data = JSON.parse(extractedJson);
+                console.log('从提取的JSON解析成功');
+                return data;
+              } catch (e2) {
+                console.error('从提取的JSON解析失败:', e2);
+              }
+            }
+            
+            // 所有方法都失败
+            console.error('所有解析方法均失败');
+            throw new Error(`无法解析API响应，请检查API服务: ${trimmedText.substring(0, 100)}`);
+          }
+        } catch (finalError) {
+          console.error('所有清理方法均失败:', finalError);
+          throw new Error(`无法解析API响应: ${trimmedText.substring(0, 100)}`);
+        }
       }
     }
 
     //console.log('API响应数据:', JSON.stringify(data).substring(0, 200) + '...');
 
-    // 根据硅基流动API的响应格式解析内容
-    if (data && data.choices && data.choices.length > 0 && data.choices[0].message && data.choices[0].message.content) {
-      const content = data.choices[0].message.content.trim();
-      // 确保返回的内容不是 [1] 这样的格式
-      return content === '[1]' ? '生成评论失败，请重试' : content;
+    // 根据硅基流动API的响应格式解析内容 - 参考官方API文档
+    console.log('解析后的API响应数据结构:', JSON.stringify(data, null, 2));
+    
+    // 检查响应是否符合官方API文档中的格式
+    if (data && data.choices && data.choices.length > 0) {
+      // 检查message字段是否存在
+      if (data.choices[0].message && data.choices[0].message.content) {
+        const content = data.choices[0].message.content.trim();
+        // 确保返回的内容不是 [1] 这样的格式
+        return content === '[1]' ? '生成评论失败，请重试' : content;
+      } 
+      // 兼容可能的其他响应格式
+      else if (data.choices[0].content) {
+        const content = data.choices[0].content.trim();
+        return content === '[1]' ? '生成评论失败，请重试' : content;
+      }
+      else {
+        console.error('API响应中找不到content字段:', data.choices[0]);
+        throw new Error('API响应格式不符合预期：找不到content字段');
+      }
     } else {
       console.error('API响应格式不符合预期:', data);
-      throw new Error('API响应格式不符合预期');
+      throw new Error('API响应格式不符合预期：缺少choices字段或为空');
     }
   } catch (error) {
     console.error('AI模型调用失败:', error);
