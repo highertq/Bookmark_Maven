@@ -210,8 +210,8 @@ async function generateAIComment(prompt: string): Promise<string> {
       // 标准JSON解析流程
       try {
         data = JSON.parse(trimmedText);
-      } catch (e) {
-        console.error('解析API响应失败:', e, '原始响应前100个字符:', trimmedText.substring(0, 100));
+      } catch {
+        console.error('解析API响应失败:', '原始响应前100个字符:', trimmedText.substring(0, 100));
         
         // 尝试多种清理方法
         try {
@@ -223,7 +223,7 @@ async function generateAIComment(prompt: string): Promise<string> {
             data = JSON.parse(cleanedText1);
             console.log('清理方法1解析成功');
             return data;
-          } catch (_) {
+          } catch {
             console.log('清理方法1解析失败，尝试方法2');
             
             // 方法2: 查找可能的JSON部分
