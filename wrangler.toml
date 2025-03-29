@@ -1,8 +1,0 @@
-[build]
-command = "npm run build"
-
-[functions]
-# 增加函数超时时间
-[functions.generateComment]
-path = "/api/generate-comment"
-timeout = 20 # 增加到20秒 
