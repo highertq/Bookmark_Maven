@@ -1,14 +1,64 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Bookmark, analyzeBookmarks, findFullestCategory, findDuplicateBookmarks } from '@/lib/bookmark-parser';
 
 interface BookmarkAnalyticsProps {
   bookmarks: Bookmark[];
 }
 
+// 定义分析结果类型，避免any类型
+interface AnalysisResult {
+  categories: Record<string, number>;
+  domains: Record<string, number>;
+  yearDistribution: [string, number][];
+  topCategories: [string, number][];
+  topDomains: [string, number][];
+}
+
+// 定义分类结果类型
+interface CategoryResult {
+  category: string;
+  count: number;
+  bookmarks: Bookmark[];
+}
+
 export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'categories' | 'domains' | 'duplicates'>('overview');
+  const [fullBookmarks, setFullBookmarks] = useState<Bookmark[]>([]);
+  const [insights, setInsights] = useState<AnalysisResult | null>(null);
+  const [fullestCategory, setFullestCategory] = useState<CategoryResult | null>(null);
+  const [duplicates, setDuplicates] = useState<Record<string, Bookmark[]>>({});
+  const [loading, setLoading] = useState<boolean>(true);
+  
+  useEffect(() => {
+    if (bookmarks && bookmarks.length > 0) {
+      console.log("处理书签数据，总数:", bookmarks.length);
+      
+      const bookmarksCopy = JSON.parse(JSON.stringify(bookmarks));
+      setFullBookmarks(bookmarksCopy);
+      
+      const newInsights = analyzeBookmarks(bookmarksCopy);
+      setInsights(newInsights as AnalysisResult);
+      
+      const newFullestCategory = findFullestCategory(bookmarksCopy);
+      setFullestCategory(newFullestCategory as CategoryResult);
+      
+      const newDuplicates = findDuplicateBookmarks(bookmarksCopy);
+      setDuplicates(newDuplicates as Record<string, Bookmark[]>);
+      
+      setLoading(false);
+      
+      console.log("分析结果:", {
+        总书签数: bookmarksCopy.length,
+        分类数: Object.keys(newInsights.categories).length,
+        域名数: Object.keys(newInsights.domains).length,
+        重复数: Object.keys(newDuplicates).length,
+        年份分布: newInsights.yearDistribution,
+        最大分类: newFullestCategory?.category
+      });
+    }
+  }, [bookmarks]);
   
   if (!bookmarks || bookmarks.length === 0) {
     return (
@@ -18,12 +68,20 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
     );
   }
   
-  const insights = analyzeBookmarks(bookmarks);
-  const fullestCategory = findFullestCategory(bookmarks);
-  const duplicates = findDuplicateBookmarks(bookmarks);
-  const duplicateCount = Object.keys(duplicates).length;
+  if (loading) {
+    return (
+      <div className="p-4 bg-white rounded-lg shadow text-center">
+        <div className="inline-block animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mb-2"></div>
+        <p className="text-gray-600">正在分析书签数据...</p>
+      </div>
+    );
+  }
   
-  // 替代方案：完全使用统一的图标
+  const bookmarksCount = fullBookmarks.length;
+  const categoriesCount = insights ? Object.keys(insights.categories).length : 0;
+  const domainsCount = insights ? Object.keys(insights.domains).length : 0;
+  const duplicateCount = duplicates ? Object.keys(duplicates).length : 0;
+  
   const BookmarkIcon = () => (
     <svg className="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path>
@@ -34,20 +92,23 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
     <div className="bg-white rounded-lg shadow p-4">
       <h2 className="text-xl font-semibold mb-4">书签数据分析</h2>
       
-      {/* 统计概览卡片 */}
+      <div className="text-xs text-gray-500 mb-2">
+        已加载 {bookmarksCount} 个书签 | 数据生成时间: {new Date().toLocaleString()}
+      </div>
+      
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-blue-50 p-4 rounded-lg text-center">
-          <div className="text-3xl font-bold text-blue-600">{bookmarks.length}</div>
+          <div className="text-3xl font-bold text-blue-600">{bookmarksCount}</div>
           <div className="text-sm text-gray-600">总书签数</div>
         </div>
         
         <div className="bg-green-50 p-4 rounded-lg text-center">
-          <div className="text-3xl font-bold text-green-600">{Object.keys(insights.categories).length}</div>
+          <div className="text-3xl font-bold text-green-600">{categoriesCount}</div>
           <div className="text-sm text-gray-600">分类数</div>
         </div>
         
         <div className="bg-purple-50 p-4 rounded-lg text-center">
-          <div className="text-3xl font-bold text-purple-600">{Object.keys(insights.domains).length}</div>
+          <div className="text-3xl font-bold text-purple-600">{domainsCount}</div>
           <div className="text-sm text-gray-600">域名数</div>
         </div>
         
@@ -57,7 +118,6 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
         </div>
       </div>
       
-      {/* 选项卡切换 */}
       <div className="border-b-2 border-gray-200 mb-6">
         <ul className="flex flex-wrap -mb-px text-center">
           <li className="mr-2 flex-1">
@@ -116,46 +176,40 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
         </ul>
       </div>
       
-      {/* 内容区域 */}
       <div className="mt-4">
-        {/* 总览 */}
-        {activeTab === 'overview' && (
+        {activeTab === 'overview' && insights && (
           <div>
-           {/* 年份分布图表 */}
-{insights.yearDistribution.length > 0 && (
-  <div className="mb-6">
-    <h3 className="text-lg font-medium mb-3 text-blue-700">书签收藏年份分布</h3>
-    
-    {/* 替换原有的柱状图为卡片网格 */}
-    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 mt-4">
-      {insights.yearDistribution.map(([year, count], index) => {
-        // 计算颜色深度 - 数量越多颜色越深
-        const maxCount = Math.max(...insights.yearDistribution.map(item => Number(item[1])));
-        const intensity = Math.max(0.3, Number(count) / maxCount);
-        
-        return (
-          <div key={index} className="bg-blue-50 rounded-lg border border-blue-100 p-3 text-center">
-            <div className="text-lg font-bold text-blue-800">{year}年</div>
-            <div className="mt-1 text-sm text-gray-600">书签数量</div>
-            <div className="mt-1 font-bold text-xl text-blue-600">{count}</div>
-            <div className="mt-2 w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-              <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.max(Number(count) / maxCount * 100, 5)}%` }}></div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  </div>
-)}
+            {insights.yearDistribution.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-medium mb-3 text-blue-700">书签收藏年份分布</h3>
+                
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 mt-4">
+                  {insights.yearDistribution.map(([year, count], index: number) => {
+                    const maxCount = Math.max(...insights.yearDistribution.map(item => Number(item[1])));
+                    const intensity = Math.max(0.3, Number(count) / maxCount);
+                    
+                    return (
+                      <div key={index} className="bg-blue-50 rounded-lg border border-blue-100 p-3 text-center">
+                        <div className="text-lg font-bold text-blue-800">{year}年</div>
+                        <div className="mt-1 text-sm text-gray-600">书签数量</div>
+                        <div className="mt-1 font-bold text-xl text-blue-600">{count}</div>
+                        <div className="mt-2 w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.max(Number(count) / maxCount * 100, 5)}%` }}></div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             
-            {/* 最丰富的分类 */}
             {fullestCategory && (
               <div className="mb-6">
                 <h3 className="text-lg font-medium mb-3">最多内容的分类: <span className="text-blue-600">{fullestCategory.category}</span></h3>
                 <p className="text-sm text-gray-600 mb-2">包含 {fullestCategory.count} 个书签</p>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mt-3">
-                  {fullestCategory.bookmarks.slice(0, 9).map((bookmark, index) => (
+                  {fullestCategory.bookmarks.slice(0, 9).map((bookmark: Bookmark, index: number) => (
                     <a 
                       key={index}
                       href={bookmark.url}
@@ -179,12 +233,11 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
           </div>
         )}
         
-        {/* 分类视图 */}
-        {activeTab === 'categories' && (
+        {activeTab === 'categories' && insights && (
           <div>
             <h3 className="text-lg font-medium mb-3">分类分布</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {insights.topCategories.map(([category, count], index) => (
+              {insights.topCategories.map(([category, count], index: number) => (
                 <div key={index} className="bg-gray-50 p-3 rounded-lg border border-gray-200">
                   <div className="flex items-center justify-between">
                     <span className="font-medium truncate">{category}</span>
@@ -193,7 +246,7 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
                   <div className="mt-2 w-full bg-gray-200 rounded-full h-1.5">
                     <div 
                       className="bg-blue-600 h-1.5 rounded-full" 
-                      style={{ width: `${(count as number) / bookmarks.length * 100}%` }}
+                      style={{ width: `${(Number(count)) / bookmarksCount * 100}%` }}
                     ></div>
                   </div>
                 </div>
@@ -208,12 +261,11 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
           </div>
         )}
         
-        {/* 域名视图 */}
-        {activeTab === 'domains' && (
+        {activeTab === 'domains' && insights && (
           <div>
             <h3 className="text-lg font-medium mb-3">常用网站</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {insights.topDomains.map(([domain, count], index) => (
+              {insights.topDomains.map(([domain, count], index: number) => (
                 <div key={index} className="flex items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
                   <div className="flex-shrink-0 mr-3">
                     <img 
@@ -233,7 +285,10 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
                     <div className="mt-1 w-full bg-gray-200 rounded-full h-1">
                       <div 
                         className="bg-blue-600 h-1 rounded-full" 
-                        style={{ width: `${(count as number) / Object.values(insights.domains).reduce((a, b) => a + b, 0) * 100}%` }}
+                        style={{ 
+                          width: `${(Number(count)) / 
+                            Object.values(insights.domains).reduce((a: number, b: number) => a + b, 0) * 100}%` 
+                        }}
                       ></div>
                     </div>
                   </div>
@@ -249,7 +304,6 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
           </div>
         )}
         
-        {/* 重复书签视图 */}
         {activeTab === 'duplicates' && (
           <div>
             <h3 className="text-lg font-medium mb-3">重复书签</h3>
@@ -260,12 +314,12 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
               </div>
             ) : (
               <div className="space-y-4">
-                {Object.entries(duplicates).slice(0, 10).map(([url, bookmarkList], index) => (
+                {Object.entries(duplicates).slice(0, 10).map(([url, bookmarkList], index: number) => (
                   <div key={index} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
                     <div className="flex items-center mb-2">
                       <BookmarkIcon />
                       <a 
-                        href={`https://${url}`} 
+                        href={url.startsWith('http') ? url : `https://${url}`} 
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="text-blue-600 hover:underline truncate"
@@ -278,7 +332,7 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
                     </div>
                     
                     <div className="pl-4 border-l-2 border-gray-200 space-y-1">
-                      {bookmarkList.map((bookmark, i) => (
+                      {bookmarkList.map((bookmark: Bookmark, i: number) => (
                         <div key={i} className="text-sm text-gray-700">
                           <span className="font-medium">{bookmark.title}</span>
                           {bookmark.category && (

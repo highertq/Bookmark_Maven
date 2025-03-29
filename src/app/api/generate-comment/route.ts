@@ -68,24 +68,31 @@ export async function POST(request: Request) {
 
 // 生成提示词
 function generatePrompt(bookmarks: BookmarkData[]): string {
-  // 随机选择20个书签或者全部（如果不足20个）
-  const randomBookmarks = bookmarks.length <= 20 
+  // 使用全部书签而不是随机选择
+  // 如果书签太多，最多使用前50个避免提示词过长
+  const maxBookmarks = 50;
+  const selectedBookmarks = bookmarks.length <= maxBookmarks 
     ? bookmarks 
-    : getRandomSample(bookmarks, 20);
+    : bookmarks.slice(0, maxBookmarks);
   
   // 提取书签信息，包含日期（如果有）
-  const bookmarkInfo = randomBookmarks.map(bookmark => {
+  const bookmarkInfo = selectedBookmarks.map(bookmark => {
     const dateInfo = bookmark.date 
       ? `（${formatBookmarkDate(bookmark.date)}收藏）` 
       : '';
     return `- ${bookmark.title}${dateInfo}`;
   }).join('\n');
 
+  // 添加说明，如果书签被截取了
+  const bookmarkNote = bookmarks.length > maxBookmarks
+    ? `\n\n注意：你只看到了我全部${bookmarks.length}个书签中的前${maxBookmarks}个，请基于这些进行评价。`
+    : '';
+
   // 构建完整提示词
-  return `你是一个极度毒舌、刻薄、尖酸且毫不留情的网络评论员，请根据以下我的书签列表（随机抽取的部分），对我的上网习惯和兴趣进行一段极其恶毒的点评，结合收藏日期更好！并且给我上网习惯起一个5字以上的外号，放在回答末尾，格式要求：你真的是个【外号名】。
+  return `你是一个极度毒舌、刻薄、尖酸且毫不留情的网络评论员，请根据以下我的书签列表，对我的上网习惯和兴趣进行一段极其恶毒的点评，结合收藏日期更好！并且给我上网习惯起一个5字以上的外号，单独放在回答最后一行，严格按照格式要求：你真的是个【外号名】。
 
 我的书签列表：
-${bookmarkInfo}
+${bookmarkInfo}${bookmarkNote}
 
 请提供一段极具攻击性、毫不留情且令人难忘的点评，必须包括：
 1. 我可能的糟糕兴趣爱好和令人担忧的性格缺陷，用最刻薄的方式描述
@@ -104,12 +111,6 @@ function formatBookmarkDate(dateString: string): string {
     return '';
   }
   return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`;
-}
-
-// 从数组中随机抽取n个元素
-function getRandomSample<T>(array: T[], n: number): T[] {
-  const shuffled = [...array].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, n);
 }
 
 // 调用AI模型生成评论

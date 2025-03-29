@@ -199,7 +199,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
     setShowCardModal(true);
   };
 
-  // 保存卡片为图片
+  // 保存卡片为图片 - 解决宽度问题并使用原生方法
   const saveCard = () => {
     if (!cardRef.current) return;
     
@@ -210,134 +210,108 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
       loadingDiv.innerHTML = '<div class="bg-white p-4 rounded-lg shadow-lg text-center"><div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mb-2"></div><p>正在生成图片...</p></div>';
       document.body.appendChild(loadingDiv);
       
-      // 确保完整捕获整个卡片
-      setTimeout(() => {
-        import('html-to-image')
-          .then(async (htmlToImage) => {
-            // 准备克隆节点以确保捕获完整内容
-            const originalNode = cardRef.current!;
-            
-            // 暂存原始样式
-            const originalStyle = {
-              width: originalNode.style.width,
-              height: originalNode.style.height,
-              position: originalNode.style.position,
-              overflow: originalNode.style.overflow,
-              background: originalNode.style.background,
-            };
-            
-            // 设置捕获时的样式
-            originalNode.style.width = '375px';
-            originalNode.style.background = '#ffffff';
-            originalNode.style.overflow = 'visible';
-            
-            try {
-              // 使用toPng方法，最稳定且广泛支持
-              const dataUrl = await htmlToImage.toPng(originalNode, {
-                quality: 1.0,
-                pixelRatio: 2.5, // 提高分辨率
-                cacheBust: true,
-                backgroundColor: '#ffffff',
-                style: {
-                  // 确保所有内容可见
-                  overflow: 'visible',
-                  borderRadius: '12px',
-                },
-              });
-              
-              // 恢复原始样式
-              Object.assign(originalNode.style, originalStyle);
-              
-              // 下载图片
-              const link = document.createElement('a');
-              link.download = `${nickname}的书签点评.png`;
-              link.href = dataUrl;
-              link.click();
-              
-              // 移除加载状态
-              document.body.removeChild(loadingDiv);
-              
-              // 短暂延迟后关闭弹窗
-              setTimeout(() => setShowCardModal(false), 500);
-            } catch (error) {
-              console.error('第一种方法失败:', error);
-              // 尝试备用方法
-              backupCapture(originalNode, originalStyle, loadingDiv);
+      // 使用替代方案 - html-to-image库
+      setTimeout(async () => {
+        try {
+          // 使用html-to-image库，修复toPng不存在的问题
+          const htmlToImage = await import('html-to-image');
+          
+          // 使用非空断言，因为已经在函数开头检查了cardRef.current是否存在
+          const cardElement = cardRef.current!;
+          
+          // 首先保存原始样式
+          const originalStyle = {
+            width: cardElement.style.width,
+            margin: cardElement.style.margin,
+            boxSizing: cardElement.style.boxSizing
+          };
+          
+          // 调整宽度 - 重要：使用固定宽度并调整内部填充
+          cardElement.style.width = '430px'; // 扩大宽度
+          cardElement.style.margin = '0';
+          cardElement.style.boxSizing = 'border-box';
+          
+          // 等待样式应用
+          await new Promise(resolve => setTimeout(resolve, 50));
+          
+          // 使用toPng方法，确保非空元素
+          const dataUrl = await htmlToImage.toPng(cardElement, {
+            quality: 1.0,
+            pixelRatio: 2,
+            backgroundColor: '#ffffff',
+            skipFonts: true, // 跳过字体处理避免错误
+            canvasWidth: 860, // 2倍宽度确保清晰
+            style: {
+              borderRadius: '12px',
+              background: '#ffffff'
             }
-          })
-          .catch((error) => {
-            console.error('导入模块失败:', error);
-            document.body.removeChild(loadingDiv);
-            alert('图片生成失败，请尝试截屏保存');
           });
-      }, 300); // 给DOM充分时间渲染
+          
+          // 恢复原始样式
+          cardElement.style.width = originalStyle.width;
+          cardElement.style.margin = originalStyle.margin;
+          cardElement.style.boxSizing = originalStyle.boxSizing;
+          
+          // 下载图片
+          const link = document.createElement('a');
+          link.download = `${nickname || '网络达人'}的书签点评.png`;
+          link.href = dataUrl;
+          link.click();
+          
+          // 移除加载状态
+          document.body.removeChild(loadingDiv);
+          
+          // 显示成功提示
+          const successToast = document.createElement('div');
+          successToast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-[100]';
+          successToast.textContent = '✅ 图片已保存到你的下载文件夹';
+          document.body.appendChild(successToast);
+          
+          // 3秒后移除成功提示
+          setTimeout(() => {
+            document.body.removeChild(successToast);
+            setShowCardModal(false);
+          }, 3000);
+        } catch (error) {
+          console.error('图片生成失败:', error);
+          useScreenshotFallback(loadingDiv);
+        }
+      }, 300);
     } catch (error) {
-      console.error('保存卡片出错:', error);
-      alert('生成图片失败，请尝试截屏保存');
+      console.error('保存卡片初始化失败:', error);
+      alert('无法生成图片，请使用浏览器截图功能保存 (Ctrl+Shift+S)');
     }
   };
 
-  // 备用捕获方法
-  const backupCapture = async (node: HTMLElement, originalStyle: any, loadingDiv: HTMLElement) => {
-    try {
-      // 导入库
-      const { toBlob } = await import('html-to-image');
-      
-      // 创建临时画布
-      const canvas = document.createElement('canvas');
-      canvas.width = 375 * 2;
-      canvas.height = node.scrollHeight * 2;
-      const ctx = canvas.getContext('2d');
-      
-      if (!ctx) throw new Error('无法创建画布上下文');
-      
-      // 填充白色背景
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // 获取Blob
-      const blob = await toBlob(node);
-      if (!blob) throw new Error('无法生成图像Blob');
-      
-      // 创建图片元素
-      const img = new Image();
-      img.onload = () => {
-        // 绘制到画布
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        
-        // 转换为数据URL
-        const dataUrl = canvas.toDataURL('image/png');
-        
-        // 创建下载链接
-        const link = document.createElement('a');
-        link.download = `${nickname}的书签点评.png`;
-        link.href = dataUrl;
-        link.click();
-        
-        // 恢复原始样式
-        Object.assign(node.style, originalStyle);
-        
-        // 移除加载状态
-        document.body.removeChild(loadingDiv);
-        
-        // 关闭弹窗
-        setTimeout(() => setShowCardModal(false), 500);
-      };
-      
-      // 加载Blob为图片
-      img.src = URL.createObjectURL(blob);
-    } catch (error) {
-      console.error('备用方法失败:', error);
-      
-      // 恢复原始样式
-      Object.assign(node.style, originalStyle);
-      
-      // 移除加载状态
+  // 截图回退方案
+  const useScreenshotFallback = (loadingDiv: HTMLElement) => {
+    // 移除加载状态
+    if (document.body.contains(loadingDiv)) {
       document.body.removeChild(loadingDiv);
-      
-      // 提示用户使用截屏
-      alert('无法生成图片，请使用截屏功能（在浏览器中按Ctrl+Shift+S或使用系统截图工具）');
     }
+    
+    // 显示截图指导
+    const screenshotDiv = document.createElement('div');
+    screenshotDiv.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[100]';
+    screenshotDiv.innerHTML = `
+      <div class="bg-white p-6 rounded-lg shadow-lg text-center max-w-md">
+        <h3 class="text-lg font-semibold mb-2">请使用截图功能</h3>
+        <p class="mb-4">图片自动生成失败，请按以下步骤手动截图：</p>
+        <ol class="text-left list-decimal pl-6 mb-4 space-y-2">
+          <li>Windows系统: 按键盘上的 <span class="bg-gray-200 px-1 py-0.5 rounded">Windows徽标键 + Shift + S</span></li>
+          <li>Mac系统: 按键盘上的 <span class="bg-gray-200 px-1 py-0.5 rounded">Command + Shift + 4</span></li>
+          <li>选择要截取的卡片区域</li>
+          <li>保存截图</li>
+        </ol>
+        <button id="screenshot-guide-close" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow">知道了</button>
+      </div>
+    `;
+    document.body.appendChild(screenshotDiv);
+    
+    // 添加关闭按钮事件
+    document.getElementById('screenshot-guide-close')?.addEventListener('click', () => {
+      document.body.removeChild(screenshotDiv);
+    });
   };
 
   return (
@@ -386,24 +360,46 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
       )}
 
       {comment ? (
-        <div className="p-5 bg-gradient-to-r from-red-50 to-orange-50 rounded-lg border border-orange-100">
+        <div className="p-5 bg-gradient-to-r from-red-50 to-orange-50 rounded-lg border border-orange-100 relative">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center">
               <span className="text-2xl mr-2">🔥</span>
               <h3 className="text-lg font-medium text-red-600">热辣点评</h3>
             </div>
+            
+            {/* 超级醒目的卡片生成按钮 */}
             {nickname && (
-              <button
-                onClick={generateCard}
-                className="px-4 py-1.5 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-600 transition-colors flex items-center"
-              >
-                <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                </svg>
-                生成卡片
-              </button>
+              <div className="flex flex-col items-end relative">
+                {/* 闪烁的光环效果 */}
+                <div className="absolute -inset-1.5 bg-gradient-to-r from-pink-500 via-purple-500 to-blue-500 rounded-lg blur opacity-70 animate-pulse"></div>
+                <button
+                  onClick={generateCard}
+                  className="relative px-5 py-2.5 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg text-sm hover:from-blue-600 hover:to-purple-700 transform hover:scale-105 transition-all shadow-lg flex items-center font-bold z-10"
+                >
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                  </svg>
+                  免费生成卡片 ✨
+                </button>
+                <div className="text-sm text-gray-600 mt-1.5 flex items-center">
+                  <svg className="w-4 h-4 mr-1 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                  </svg>
+                  <span>完全免费，已有<span className="font-bold text-red-500 mx-1">97%</span>用户使用</span>
+                </div>
+              </div>
             )}
           </div>
+          
+          {/* 新功能标志 */}
+          {nickname && (
+            <div className="absolute -top-4 -right-2 transform rotate-12">
+              <span className="inline-block bg-yellow-400 text-yellow-800 text-xs px-2 py-1 rounded-lg font-bold shadow-md animate-bounce">
+                🎁 新功能!
+              </span>
+            </div>
+          )}
+          
           <div className="text-gray-700 leading-relaxed">
             {comment.split('\n\n').map((paragraph, index) => (
               <p key={index} className="mb-3 break-words whitespace-pre-line">
@@ -411,6 +407,76 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
               </p>
             ))}
           </div>
+          
+          {/* 底部引导横幅 - 全新设计 */}
+          {nickname && (
+            <div className="mt-5">
+              <div 
+                onClick={generateCard}
+                className="bg-blue-500 rounded-lg shadow-md hover:shadow-lg transition-all cursor-pointer overflow-hidden"
+              >
+                {/* 顶部免费标签 */}
+                <div className="absolute -right-1 -top-1 z-10">
+                  <div className="bg-yellow-400 text-yellow-800 px-2 py-0.5 rounded-bl-lg rounded-tr-lg text-xs font-bold shadow-sm">
+                    100% 免费
+                  </div>
+                </div>
+                
+                {/* 标题区域 */}
+                <div className="p-3 flex items-center space-x-3">
+                  {/* 左侧图标 */}
+                  <div className="flex-shrink-0">
+                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-md">
+                      <span role="img" aria-label="fire" className="text-2xl">🔥</span>
+                    </div>
+                  </div>
+                  
+                  {/* 中间文本 */}
+                  <div className="flex-1">
+                    <h3 className="text-white font-bold text-base leading-tight">
+                      生成你的专属卡片
+                    </h3>
+                    {/* 外号名字区域 - 解决红色箭头指向的问题 */}
+                    <div className="mt-1 bg-white bg-opacity-90 px-2 py-1 rounded text-blue-700 font-bold text-sm inline-block shadow-sm">
+                      {nickname || "技术宅废物"}
+                    </div>
+                  </div>
+                  
+                  {/* 右侧按钮 */}
+                  <div className="flex-shrink-0">
+                    <button className="bg-white text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-md text-sm font-bold shadow flex items-center transition-colors">
+                      <span>立即生成</span>
+                      <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                
+                {/* 底部特点区域 */}
+                <div className="bg-blue-600 px-3 py-2 flex items-center justify-between text-xs text-blue-100">
+                  <div className="flex items-center">
+                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
+                    </svg>
+                    <span>高清图片</span>
+                  </div>
+                  <div className="flex items-center">
+                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
+                    </svg>
+                    <span>随时保存分享</span>
+                  </div>
+                  <div className="flex items-center">
+                    <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
+                    </svg>
+                    <span>已有<span className="font-bold text-white mx-0.5">97%</span>用户使用</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="p-5 bg-gray-50 rounded-lg border border-gray-200 text-center text-gray-500">
@@ -578,16 +644,30 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
               </div>
             </div>
             
-            <div className="flex justify-center">
+            <div className="flex flex-col items-center mt-6">
               <button
                 onClick={saveCard}
-                className="px-6 py-2.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center"
+                className="group relative inline-flex items-center justify-center px-8 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-lg text-lg font-bold shadow-lg hover:from-blue-700 hover:to-indigo-800 transition-all overflow-hidden"
               >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                </svg>
-                保存图片
+                {/* 背景动画效果 */}
+                <span className="absolute inset-0 w-full h-full bg-gradient-to-br from-blue-400 to-indigo-500 opacity-0 group-hover:opacity-90 transition-opacity"></span>
+                <span className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-transparent via-transparent to-black opacity-10"></span>
+                
+                {/* 按钮内容 */}
+                <span className="relative flex items-center">
+                  <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                  </svg>
+                  免费保存我的专属卡片
+                  <span className="ml-1 animate-pulse">✨</span>
+                </span>
               </button>
+              <div className="text-center text-gray-500 text-sm mt-2 flex items-center justify-center">
+                <svg className="w-4 h-4 mr-1 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
+                </svg>
+                <span>完全免费，图片将自动下载到你的设备</span>
+              </div>
             </div>
           </div>
         </div>

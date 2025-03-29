@@ -61,22 +61,18 @@ export default function UploadBookmark({ onBookmarksProcessed }: UploadBookmarkP
         return bookmark;
       });
       
-      // 随机选取20个书签（如果总数超过20个）
-      const selectedBookmarks = bookmarksWithDates.length <= 20 
-        ? bookmarksWithDates 
-        : getRandomSample(bookmarksWithDates, 20);
-      
+      // 不再随机选取，使用全部书签
       setMessage(`成功解析 ${bookmarksWithDates.length} 个书签，可以进行分析了！`);
       
-      // 存储解析的书签
-      setParsedBookmarks(selectedBookmarks);
+      // 存储解析的书签（使用全部书签而不是随机选择）
+      setParsedBookmarks(bookmarksWithDates);
       
       // 显示分析组件
       setShowAnalytics(true);
       
       // 安全地调用回调函数，检查它是否存在
       if (typeof onBookmarksProcessed === 'function') {
-        onBookmarksProcessed(selectedBookmarks);
+        onBookmarksProcessed(bookmarksWithDates);
       }
     } catch (error) {
       console.error('解析书签失败:', error);
@@ -92,12 +88,6 @@ export default function UploadBookmark({ onBookmarksProcessed }: UploadBookmarkP
     const pastDate = new Date(today);
     pastDate.setDate(today.getDate() - Math.floor(Math.random() * daysBack));
     return pastDate.toISOString();
-  }
-  
-  // 从数组中随机抽取n个元素
-  function getRandomSample<T>(array: T[], n: number): T[] {
-    const shuffled = [...array].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, n);
   }
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
