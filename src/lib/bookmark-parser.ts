@@ -43,12 +43,12 @@ export function parseBookmarks(html: string): BookmarkNode {
     const doc = parser.parseFromString(html, 'text/html');
 
     // 调试信息，查看解析到的HTML结构
-    console.log("HTML解析结果:", {
-      title: doc.title,
-      hasDL: !!doc.querySelector('dl'),
-      hasH3: !!doc.querySelector('h3'),
-      hasA: !!doc.querySelector('a')
-    });
+    // console.log("HTML解析结果:", {
+    //   title: doc.title,
+    //   hasDL: !!doc.querySelector('dl'),
+    //   hasH3: !!doc.querySelector('h3'),
+    //   hasA: !!doc.querySelector('a')
+    // });
 
     // 查找所有DL元素（不同浏览器可能有不同的结构）
     const dlElements = doc.querySelectorAll('dl');
@@ -229,8 +229,8 @@ export function findEarliestBookmark(bookmarks: Bookmark[]): { bookmark: Bookmar
   }
   
   // 调试信息
-  console.log("书签总数:", bookmarks.length);
-  console.log("有时间戳的书签数:", bookmarks.filter(b => b.addDate).length);
+  // console.log("书签总数:", bookmarks.length);
+  // console.log("有时间戳的书签数:", bookmarks.filter(b => b.addDate).length);
   
   // 过滤出有添加日期的书签
   const bookmarksWithDate = bookmarks.filter(b => 
@@ -252,12 +252,12 @@ export function findEarliestBookmark(bookmarks: Bookmark[]): { bookmark: Bookmar
     return current.addDate < earliest.addDate ? current : earliest;
   }, bookmarksWithDate[0]);
   
-  console.log("最早的书签:", {
-    title: earliestBookmark.title,
-    url: earliestBookmark.url,
-    addDate: earliestBookmark.addDate,
-    formattedDate: earliestBookmark.addDateFormatted
-  });
+  // console.log("最早的书签:", {
+  //   title: earliestBookmark.title,
+  //   url: earliestBookmark.url,
+  //   addDate: earliestBookmark.addDate,
+  //   formattedDate: earliestBookmark.addDateFormatted
+  // });
   
   // 计算距今天数
   const now = new Date();

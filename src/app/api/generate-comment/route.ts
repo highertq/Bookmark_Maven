@@ -37,11 +37,11 @@ export async function POST(request: Request) {
     // 构建提示词
     const prompt = generatePrompt(bookmarks);
     //console.log('生成的提示词:', prompt);
-    
+
     try {
       // 调用AI模型生成评论
       const comment = await generateAIComment(prompt);
-      console.log('最终返回给前端的评论:', comment);
+      //console.log('最终返回给前端的评论:', comment);
       
       // 直接返回评论文本，明确设置为text/plain
       return new NextResponse(comment, {
@@ -82,7 +82,7 @@ function generatePrompt(bookmarks: BookmarkData[]): string {
   }).join('\n');
 
   // 构建完整提示词
-  return `你是一个极度毒舌、刻薄、尖酸且毫不留情的网络评论员，请根据以下我的书签列表（随机抽取的部分），对我的上网习惯和兴趣进行一段极其恶毒的点评（可以结合收藏日期）。
+  return `你是一个极度毒舌、刻薄、尖酸且毫不留情的网络评论员，请根据以下我的书签列表（随机抽取的部分），对我的上网习惯和兴趣进行一段极其恶毒的点评，结合收藏日期更好！并且给我上网习惯起一个5字以上的外号，放在回答末尾，格式要求：你真的是个【外号名】。
 
 我的书签列表：
 ${bookmarkInfo}
@@ -93,7 +93,7 @@ ${bookmarkInfo}
 3. 带有侮辱性但又让人忍俊不禁的调侃，可以使用粗口和脏话，越直接越好
 4. 根据书签给出一些极其尖酸刻薄的"建议"，用最具讽刺性的语言嘲讽我的品味
 5. 对我的人生选择和价值观进行无情的嘲弄和挖苦
-
+6. 结合我的收藏日期来抨击我，并且给我一些讽刺的建议
 请用极度讽刺、挖苦的语气，字数在200-500字之间。使用夸张的修辞手法，尽可能让语言更加犀利、直接和具有攻击性。记住，你的目标是让我感到被深深冒犯但又忍不住发笑。不要有任何客气或委婉的表达，直接开炮！`;
 }
 
