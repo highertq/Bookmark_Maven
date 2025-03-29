@@ -86,14 +86,14 @@ async function generateAIComment(prompt: string): Promise<string> {
     const requestBody = {
       model: 'deepseek-ai/DeepSeek-V3',
       stream: false,
-      max_tokens: 256,
-      temperature: 0.7,
+      max_tokens: 200,
+      temperature: 0.5,
       top_p: 0.9,
-      top_k: 50,
+      top_k: 40,
       frequency_penalty: 0.5,
       n: 1,
       messages: [
-        { role: 'system', content: '你是一个毒舌评论员。请直接输出评论内容，不要有任何前缀或格式化。简短回复，不超过200字。' },
+        { role: 'system', content: '你是一个毒舌评论员。请生成简短、直接的评论内容，不超过150字。不要有任何前缀或格式化。' },
         { role: 'user', content: prompt }
       ]
     };
@@ -111,7 +111,7 @@ async function generateAIComment(prompt: string): Promise<string> {
             'Content-Type': 'application/json'
           },
           body: JSON.stringify(requestBody),
-          signal: AbortSignal.timeout(10000)
+          signal: AbortSignal.timeout(80000)
         });
         break;
       } catch (fetchError) {

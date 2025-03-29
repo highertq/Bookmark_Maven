@@ -28,16 +28,30 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
 
     setIsLoading(true);
     setError(null);
+    
+    // 设置客户端超时保护
+    const timeoutId = setTimeout(() => {
+      if (isLoading) {
+        setError('生成评论需要较长时间，请耐心等待...');
+      }
+    }, 5000);
 
     try {
+      // 使用AbortController实现客户端超时控制
+      const controller = new AbortController();
+      const timeoutController = setTimeout(() => controller.abort(), 20000);
+      
       const response = await fetch('/api/generate-comment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ bookmarks }),
+        signal: controller.signal
       });
-
+      
+      clearTimeout(timeoutController);
+      
       const responseText = await response.text();
       console.log('API原始响应:', responseText);
 
@@ -68,9 +82,14 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
         setComment(JSON.stringify(data));
       }
     } catch (err) {
-      console.error('获取评论失败:', err);
-      setError(err instanceof Error ? err.message : '生成评论失败，请稍后再试');
+      // 处理AbortError
+      if (err instanceof Error && err.name === 'AbortError') {
+        setError('请求超时，请减少书签数量后再试');
+      } else {
+        setError(err instanceof Error ? err.message : '生成评论失败，请稍后再试');
+      }
     } finally {
+      clearTimeout(timeoutId);
       setIsLoading(false);
     }
   };
