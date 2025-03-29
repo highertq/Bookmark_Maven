@@ -95,14 +95,51 @@ async function generateAIComment(prompt: string): Promise<string> {
 
     // 打印完整请求消息到控制台
     console.log('发送给API的请求消息:', JSON.stringify(requestBody, null, 2));
-    const response = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(requestBody)
-    });
+    
+    // 检查API密钥是否存在
+    if (!apiKey) {
+      console.error('API密钥未设置');
+      throw new Error('API密钥未设置，请在环境变量中配置SILICONFLOW_API_KEY');
+    }
+    // 添加超时和重试机制
+    let response;
+    let retryCount = 0;
+    const maxRetries = 2;
+    
+    while (retryCount <= maxRetries) {
+      try {
+        response = await fetch('https://api.siliconflow.cn/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestBody),
+          // 添加超时设置
+          signal: AbortSignal.timeout(15000) // 15秒超时
+        });
+        break; // 如果成功，跳出循环
+      } catch (fetchError) {
+        retryCount++;
+        console.error(`API请求失败(尝试 ${retryCount}/${maxRetries + 1}):`, fetchError);
+        
+        if (fetchError.name === 'AbortError') {
+          console.error('API请求超时');
+          if (retryCount > maxRetries) {
+            throw new Error('API请求超时，请稍后再试');
+          }
+        } else if (retryCount > maxRetries) {
+          throw new Error(`API请求失败: ${fetchError.message}`);
+        }
+        
+        // 等待一段时间后重试
+        await new Promise(resolve => setTimeout(resolve, 1000 * retryCount));
+      }
+    }
+    
+    if (!response) {
+      throw new Error('API请求失败，无法获取响应');
+    }
 
     if (!response.ok) {
       const contentType = response.headers.get('Content-Type');
@@ -133,22 +170,38 @@ async function generateAIComment(prompt: string): Promise<string> {
 
     const contentType = response.headers.get('Content-Type');
     let data;
-    if (contentType && contentType.includes('application/json')) {
-      const responseText = await response.text();
-      console.log('原始API响应:', responseText);
+    const responseText = await response.text();
+    console.log('原始API响应:', responseText);
+    
+    // 检查响应文本是否为空或只包含空白字符
+    if (!responseText || responseText.trim() === '') {
+      console.error('API响应为空');
+      throw new Error('API响应为空');
+    }
+    
+    // 检查响应文本是否以有效的JSON字符开始
+    if (responseText.trim()[0] !== '{' && responseText.trim()[0] !== '[') {
+      console.error('API响应不是有效的JSON格式:', responseText);
+      throw new Error(`API响应不是有效的JSON格式: ${responseText.substring(0, 100)}`);
+    }
+    
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      console.error('解析API响应失败:', e, '原始响应:', responseText);
+      // 尝试清理响应文本中可能存在的BOM或其他特殊字符
       try {
-        data = JSON.parse(responseText);
-      } catch (e) {
-        console.error('解析API响应失败:', e, '原始响应:', responseText);
-        throw new Error('无法解析API响应');
+        const cleanedText = responseText.replace(/^\s+|\s+$/g, '').replace(/[\ufeff\u200b]/g, '');
+        console.log('尝试清理后的响应:', cleanedText);
+        data = JSON.parse(cleanedText);
+        console.log('清理后解析成功');
+      } catch (cleanError) {
+        console.error('清理后仍然无法解析:', cleanError);
+        throw new Error(`无法解析API响应: ${responseText.substring(0, 100)}`);
       }
-    } else {
-      const responseText = await response.text();
-      console.error('API响应不是JSON格式:', responseText);
-      throw new Error('API响应不是JSON格式');
     }
 
-    console.log('API响应数据:', JSON.stringify(data).substring(0, 200) + '...');
+    //console.log('API响应数据:', JSON.stringify(data).substring(0, 200) + '...');
 
     // 根据硅基流动API的响应格式解析内容
     if (data && data.choices && data.choices.length > 0 && data.choices[0].message && data.choices[0].message.content) {
