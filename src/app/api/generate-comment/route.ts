@@ -224,6 +224,9 @@ async function generateAIComment(prompt: string): Promise<string> {
     }
   } catch (error) {
     console.error('AI模型调用失败:', error);
-    throw new Error(error instanceof Error ? error.message : '未知错误');
+    // 确保将错误转换为字符串而不是直接抛出
+    const errorMessage = error instanceof Error ? error.message : '未知错误';
+    // 返回错误消息而不是抛出异常
+    return `生成评论失败: ${errorMessage}`;
   }
 }

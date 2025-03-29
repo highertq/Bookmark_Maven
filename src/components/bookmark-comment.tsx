@@ -38,6 +38,11 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
         body: JSON.stringify({ bookmarks }),
       });
 
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('服务器返回了非JSON格式的响应');
+      }
+      
       const data = await response.json();
 
       if (!response.ok) {
