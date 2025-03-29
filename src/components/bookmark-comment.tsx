@@ -199,87 +199,250 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
     setShowCardModal(true);
   };
 
-  // 保存卡片为图片 - 解决宽度问题并使用原生方法
+  // 保存卡片为图片 - 修复宽度问题和颜色解析错误
   const saveCard = () => {
     if (!cardRef.current) return;
     
     try {
       // 显示加载状态
+      console.log("saveCard 函数开始执行");
       const loadingDiv = document.createElement('div');
       loadingDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]';
       loadingDiv.innerHTML = '<div class="bg-white p-4 rounded-lg shadow-lg text-center"><div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mb-2"></div><p>正在生成图片...</p></div>';
       document.body.appendChild(loadingDiv);
       
-      // 使用替代方案 - html-to-image库
       setTimeout(async () => {
         try {
-          // 使用html-to-image库，修复toPng不存在的问题
-          const htmlToImage = await import('html-to-image');
+          console.log("开始生成图片...");
           
-          // 使用非空断言，因为已经在函数开头检查了cardRef.current是否存在
+          // 克隆预览中的卡片元素，避免修改原始元素
           const cardElement = cardRef.current!;
+          const clone = cardElement.cloneNode(true) as HTMLElement;
           
-          // 首先保存原始样式
-          const originalStyle = {
-            width: cardElement.style.width,
-            margin: cardElement.style.margin,
-            boxSizing: cardElement.style.boxSizing
-          };
+          // 设置克隆元素样式以确保完整渲染 - 增加宽度
+          clone.style.position = 'fixed';
+          clone.style.top = '-9999px';
+          clone.style.left = '-9999px';
+          clone.style.width = '430px'; // 增加宽度从375px到430px
+          clone.style.height = 'auto';
+          clone.style.background = '#ffffff';
+          clone.style.padding = '0';
+          clone.style.margin = '0';
+          clone.style.border = 'none';
+          clone.style.borderRadius = '12px';
+          clone.style.overflow = 'hidden';
+          clone.style.boxShadow = 'none';
+          clone.style.zIndex = '-1';
           
-          // 调整宽度 - 重要：使用固定宽度并调整内部填充
-          cardElement.style.width = '430px'; // 扩大宽度
-          cardElement.style.margin = '0';
-          cardElement.style.boxSizing = 'border-box';
-          
-          // 等待样式应用
-          await new Promise(resolve => setTimeout(resolve, 50));
-          
-          // 使用toPng方法，确保非空元素
-          const dataUrl = await htmlToImage.toPng(cardElement, {
-            quality: 1.0,
-            pixelRatio: 2,
-            backgroundColor: '#ffffff',
-            skipFonts: true, // 跳过字体处理避免错误
-            canvasWidth: 860, // 2倍宽度确保清晰
-            style: {
-              borderRadius: '12px',
-              background: '#ffffff'
+          // 处理所有元素中的颜色值，替换不兼容的颜色函数
+          const allElements = clone.querySelectorAll('*');
+          allElements.forEach((el) => {
+            const element = el as HTMLElement;
+            try {
+              const computedStyle = getComputedStyle(element);
+              
+              // 将计算后的标准RGB颜色应用到元素上
+              if (computedStyle.color) element.style.color = computedStyle.color;
+              if (computedStyle.backgroundColor && computedStyle.backgroundColor !== 'rgba(0, 0, 0, 0)') {
+                element.style.backgroundColor = computedStyle.backgroundColor;
+              }
+              if (computedStyle.borderColor) element.style.borderColor = computedStyle.borderColor;
+            } catch (e) {
+              console.log('处理元素样式出错:', e);
+            }
+            
+            // 移除可能包含问题颜色函数的渐变并替换为安全颜色
+            if (element.style.background && (
+                element.style.background.includes('gradient') || 
+                element.style.background.includes('oklch'))) {
+              // 替换为标准RGB渐变
+              element.style.background = 'linear-gradient(135deg, #FF416C 0%, #FF4B2B 100%)';
             }
           });
           
-          // 恢复原始样式
-          cardElement.style.width = originalStyle.width;
-          cardElement.style.margin = originalStyle.margin;
-          cardElement.style.boxSizing = originalStyle.boxSizing;
+          // 将克隆的元素添加到文档
+          document.body.appendChild(clone);
           
-          // 下载图片
-          const link = document.createElement('a');
-          link.download = `${nickname || '网络达人'}的书签点评.png`;
-          link.href = dataUrl;
-          link.click();
+          // 等待字体加载完成
+          await document.fonts.ready;
+          console.log("字体已加载完成");
+          await new Promise(resolve => setTimeout(resolve, 500));
           
-          // 移除加载状态
-          document.body.removeChild(loadingDiv);
+          console.log("开始渲染图片...");
           
-          // 显示成功提示
-          const successToast = document.createElement('div');
-          successToast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-[100]';
-          successToast.textContent = '✅ 图片已保存到你的下载文件夹';
-          document.body.appendChild(successToast);
-          
-          // 3秒后移除成功提示
-          setTimeout(() => {
-            document.body.removeChild(successToast);
-            setShowCardModal(false);
-          }, 3000);
+          try {
+            // 使用html2canvas配置优化
+            const html2canvas = await import('html2canvas');
+            console.log("html2canvas导入成功，开始创建canvas");
+
+            const canvas = await html2canvas.default(clone, {
+              scale: 3, // 高清渲染
+              useCORS: true,
+              allowTaint: true,
+              backgroundColor: '#ffffff',
+              logging: true,
+              width: 430, // 增加宽度从375px到430px
+              height: clone.offsetHeight
+            });
+            
+            console.log("Canvas创建成功，canvas尺寸:", canvas.width, "x", canvas.height);
+            
+            // 将canvas转换为图片URL
+            const dataUrl = canvas.toDataURL('image/png', 1.0);
+            
+            // 下载图片
+            const link = document.createElement('a');
+            link.download = `${nickname || '网络达人'}的书签点评.png`;
+            link.href = dataUrl;
+            link.click();
+            
+            console.log("图片已生成并下载");
+            
+            // 清理
+            document.body.removeChild(clone);
+            document.body.removeChild(loadingDiv);
+            
+            // 显示成功提示
+            const successToast = document.createElement('div');
+            successToast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-[100]';
+            successToast.textContent = '✅ 图片已保存到你的下载文件夹';
+            document.body.appendChild(successToast);
+            
+            // 3秒后移除成功提示
+            setTimeout(() => {
+              document.body.removeChild(successToast);
+              setShowCardModal(false);
+            }, 3000);
+          } catch (error) {
+            console.error('html2canvas错误:', error);
+            document.body.removeChild(clone);
+            
+            // 尝试使用更简单的DOM-to-Image方法
+            try {
+              const domtoimage = await import('dom-to-image');
+              console.log("使用备用方法dom-to-image");
+              
+              const dataUrl = await domtoimage.default.toPng(cardElement, {
+                quality: 1.0,
+                bgcolor: '#ffffff',
+                width: 430, // 增加宽度
+                height: cardElement.offsetHeight
+              });
+              
+              // 下载图片
+              const link = document.createElement('a');
+              link.download = `${nickname || '网络达人'}的书签点评.png`;
+              link.href = dataUrl;
+              link.click();
+              
+              // 清理
+              document.body.removeChild(loadingDiv);
+              
+              // 显示成功提示
+              const successToast = document.createElement('div');
+              successToast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-[100]';
+              successToast.textContent = '✅ 图片已保存到你的下载文件夹';
+              document.body.appendChild(successToast);
+              
+              // 3秒后移除成功提示
+              setTimeout(() => {
+                document.body.removeChild(successToast);
+                setShowCardModal(false);
+              }, 3000);
+            } catch (backupError) {
+              console.error("备用方法也失败:", backupError);
+              useScreenshotFallback(loadingDiv);
+            }
+          }
         } catch (error) {
-          console.error('图片生成失败:', error);
-          useScreenshotFallback(loadingDiv);
+          console.error('创建卡片元素失败:', error);
+          document.body.removeChild(loadingDiv);
+          alert('无法生成图片，请尝试使用浏览器的截图功能');
         }
       }, 300);
     } catch (error) {
-      console.error('保存卡片初始化失败:', error);
-      alert('无法生成图片，请使用浏览器截图功能保存 (Ctrl+Shift+S)');
+      console.error('初始化失败:', error);
+      alert('无法生成图片，请使用浏览器截图功能保存');
+    }
+  };
+
+  // 修复备份捕获函数中的引用错误
+  const backupCapture = async (clone: HTMLElement, loadingDiv: HTMLElement) => {
+    try {
+      // 获取元素尺寸 - 增加宽度
+      const width = 430; // 从375px增加到430px
+      const height = clone.offsetHeight || 700;
+      
+      // 创建Canvas
+      const canvas = document.createElement('canvas');
+      canvas.width = width * 3; // 高分辨率
+      canvas.height = height * 3;
+      const ctx = canvas.getContext('2d');
+      
+      if (!ctx) {
+        throw new Error('无法创建Canvas上下文');
+      }
+      
+      // 设置背景
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.scale(3, 3); // 缩放以提高质量
+      
+      // 绘制HTML到Canvas
+      const data = await new Promise<string>((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/png', 1.0));
+        };
+        // 先生成临时图片
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCanvas.width = width;
+        tempCanvas.height = height;
+        
+        if (tempCtx) {
+          tempCtx.fillStyle = '#ffffff';
+          tempCtx.fillRect(0, 0, width, height);
+          
+          // 修复html2canvas引用问题
+          import('html2canvas').then(html2canvasModule => {
+            html2canvasModule.default(clone, {
+              canvas: tempCanvas,
+              scale: 1,
+              backgroundColor: '#ffffff',
+              logging: false
+            }).then(canvasResult => {
+              img.src = canvasResult.toDataURL('image/png');
+            });
+          });
+        }
+      });
+      
+      // 下载图片
+      const link = document.createElement('a');
+      link.download = `${nickname || '网络达人'}的书签点评.png`;
+      link.href = data;
+      link.click();
+      
+      // 清理
+      document.body.removeChild(loadingDiv);
+      
+      // 显示成功提示
+      const successToast = document.createElement('div');
+      successToast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-[100]';
+      successToast.textContent = '✅ 图片已保存到你的下载文件夹';
+      document.body.appendChild(successToast);
+      
+      // 3秒后移除成功提示
+      setTimeout(() => {
+        document.body.removeChild(successToast);
+        setShowCardModal(false);
+      }, 3000);
+    } catch (error) {
+      console.error('备份捕获失败:', error);
+      // 恢复原始元素的状态
+      useScreenshotFallback(loadingDiv);
     }
   };
 
@@ -363,7 +526,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
         <div className="p-5 bg-gradient-to-r from-red-50 to-orange-50 rounded-lg border border-orange-100 relative">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center">
-              <span className="text-2xl mr-2">🔥</span>
+            <span className="text-2xl mr-2">🔥</span>
               <h3 className="text-lg font-medium text-red-600">热辣点评</h3>
             </div>
             
@@ -415,13 +578,6 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
                 onClick={generateCard}
                 className="bg-blue-500 rounded-lg shadow-md hover:shadow-lg transition-all cursor-pointer overflow-hidden"
               >
-                {/* 顶部免费标签 */}
-                <div className="absolute -right-1 -top-1 z-10">
-                  <div className="bg-yellow-400 text-yellow-800 px-2 py-0.5 rounded-bl-lg rounded-tr-lg text-xs font-bold shadow-sm">
-                    100% 免费
-                  </div>
-                </div>
-                
                 {/* 标题区域 */}
                 <div className="p-3 flex items-center space-x-3">
                   {/* 左侧图标 */}
@@ -438,7 +594,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
                     </h3>
                     {/* 外号名字区域 - 解决红色箭头指向的问题 */}
                     <div className="mt-1 bg-white bg-opacity-90 px-2 py-1 rounded text-blue-700 font-bold text-sm inline-block shadow-sm">
-                      {nickname || "技术宅废物"}
+                      {nickname}
                     </div>
                   </div>
                   
@@ -511,7 +667,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
               </button>
             </div>
             
-            {/* 卡片预览区域 */}
+            {/* 卡片预览区域 - 修改以解决显示问题和比例问题 */}
             <div 
               ref={cardRef} 
               className="relative overflow-hidden rounded-xl shadow-lg mb-4"
@@ -519,21 +675,21 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
                 width: '375px',
                 margin: '0 auto',
                 backgroundColor: '#fff',
-                fontFamily: '"Segoe UI", Roboto, system-ui, -apple-system, sans-serif',
+                fontFamily: '"Noto Sans SC", "Source Sans Pro", system-ui, -apple-system, sans-serif',
               }}
             >
-              {/* 顶部渐变背景 - 减小高度 */}
+              {/* 顶部渐变背景 */}
               <div 
-                className="absolute top-0 left-0 w-full h-20 z-0"
+                className="absolute top-0 left-0 w-full h-16 z-0"
                 style={{
                   background: 'linear-gradient(135deg, #FF416C 0%, #FF4B2B 100%)',
                 }}
               ></div>
               
               {/* 卡片内容容器 */}
-              <div className="relative z-10 px-5 pt-6 pb-5">
+              <div className="relative z-10 px-5 pt-4 pb-5">
                 {/* 头部区域 */}
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-2">
                     <div 
                       className="w-10 h-10 flex items-center justify-center rounded-full"
@@ -541,7 +697,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
                     >
                       <span className="text-xl">🔥</span>
                     </div>
-                    <h2 className="text-white font-bold text-xl tracking-tight">书签热辣点评</h2>
+                    <h2 className="text-white font-bold text-lg">书签热辣点评</h2>
                   </div>
                   <div 
                     className="text-xs text-white px-2 py-1 rounded-full"
@@ -552,50 +708,52 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
                 </div>
                 
                 {/* 增加间隔，使外号区域远离顶部 */}
-                <div className="h-8"></div>
+                <div className="h-4"></div>
                 
-                {/* 外号展示区 - 简洁居中设计，无边框 */}
-                <div className="mb-6 text-center">
+                {/* 外号展示区 - 增强字体清晰度 */}
+                <div className="mb-4 text-center">
                   <h1 
-                    className="text-2xl font-black tracking-wide inline-block"
+                    className="text-xl font-black inline-block"
                     style={{ 
                       color: '#FF416C',
                       textShadow: '1px 1px 0 rgba(0,0,0,0.1)',
-                      fontFamily: 'Arial Black, Helvetica, sans-serif',
+                      fontFamily: '"Arial Black", "Noto Sans SC", sans-serif',
                       letterSpacing: '0.5px',
+                      fontWeight: 900,
                     }}
                   >
                     {nickname}
                   </h1>
                   <div 
-                    className="w-16 h-1 mx-auto mt-2"
+                    className="w-16 h-1 mx-auto mt-1"
                     style={{ 
                       background: 'linear-gradient(90deg, transparent, #FF416C, transparent)',
                     }}
                   ></div>
                 </div>
                 
-                {/* 内容区域 - 改进字体和样式 */}
+                {/* 内容区域 - 改进字体和样式提高清晰度 */}
                 <div 
-                  className="bg-white rounded-xl p-5 shadow-sm mt-3"
+                  className="bg-white rounded-lg p-4 shadow-sm"
                   style={{
-                    boxShadow: '0 4px 20px rgba(0,0,0,0.05)',
-                    fontFamily: '"Noto Sans SC", "Source Sans Pro", -apple-system, system-ui, sans-serif',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                    fontFamily: '"Noto Sans SC", "Source Sans Pro", system-ui, sans-serif',
                   }}
                 >
-                  {/* 装饰元素 - 调整位置 */}
-                  <div className="absolute right-4 top-36 opacity-10 rotate-12">
-                    <svg width="60" height="60" viewBox="0 0 24 24" fill="#FF416C">
+                  {/* 装饰元素 */}
+                  <div className="absolute right-4 top-24 opacity-10 rotate-12">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="#FF416C">
                       <path d="M17 3H7c-1.1 0-2 .9-2 2v16l7-3 7 3V5c0-1.1-.9-2-2-2z"/>
                     </svg>
                   </div>
                   
-                  {/* 评论内容 - 改进文字样式 */}
+                  {/* 评论内容 - 提高文字渲染质量 */}
                   <div 
-                    className="text-gray-700 leading-relaxed space-y-3"
+                    className="text-gray-700 leading-relaxed space-y-2"
                     style={{ 
-                      fontSize: '15px',
-                      lineHeight: 1.6,
+                      fontSize: '14px',
+                      lineHeight: 1.5,
+                      fontWeight: 400,
                     }}
                   >
                     {comment.split('\n\n').map((paragraph, index, array) => {
@@ -616,19 +774,12 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
                       );
                     })}
                   </div>
-                  
-                  {/* 引用标记装饰 - 调整位置 */}
-                  <div className="absolute left-8 top-44 opacity-10">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="#FF416C">
-                      <path d="M6 17h3l2-4V7H5v6h3zm8 0h3l2-4V7h-6v6h3z"/>
-                    </svg>
-                  </div>
                 </div>
                 
                 {/* 底部信息 */}
-                <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
+                <div className="mt-3 flex items-center justify-between text-xs text-gray-500">
                   <div className="flex items-center space-x-1">
-                    <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
                       <path strokeLinecap="round" strokeLinejoin="round" d="M10.172 13.828a4 4 0 015.656 0l4 4a4 4 0 01-5.656 5.656l-1.102-1.101" />
                     </svg>
