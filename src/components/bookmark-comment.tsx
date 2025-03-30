@@ -94,13 +94,13 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
       
       // 随机更换加载消息
       const messages = [
-        '分析你的书签中...',
-        '思考刻薄的评论...',
-        '组织语言，准备开喷...',
-        '正在酝酿犀利观点...',
-        '正在构思毒舌评论...',
-        '这需要一点时间，但会很精彩...',
-        '正在挖掘深藏的嘲讽...'
+        '分析您的书签中...',
+        '构建人格模型分析...',
+        '提取隐藏的行为模式...',
+        '正在生成网络画像...',
+        '挖掘您的兴趣偏好...',
+        '这需要一点时间，请耐心等待...',
+        '正在连接AI大脑分析模型...'
       ];
       
       setLoadingMessage(messages[Math.floor(Math.random() * messages.length)]);
@@ -185,7 +185,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
         console.warn('JSON解析错误，已忽略:', err.message);
       } else {
         // 其他错误正常显示
-        setError(err instanceof Error ? err.message : '热辣评论失败，请稍后再试');
+        setError(err instanceof Error ? err.message : '网络人格分析失败，请稍后再试');
       }
       
       // 确保在错误情况下也清除加载状态
@@ -479,19 +479,51 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
 
   return (
     <div className="w-full bg-white rounded-lg shadow-sm p-6 mb-8">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold">热辣点评</h2>
-        <button
-          onClick={generateComment}
-          disabled={isLoading || bookmarks.length === 0}
-          className={`px-6 py-2.5 rounded-md text-white text-base font-medium shadow-md ${
-            isLoading 
-              ? 'bg-gray-400 cursor-not-allowed' 
-              : 'bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 transform hover:scale-105 transition-all'
-          }`}
-        >
-          {isLoading ? '点评中...' : '✨ 开始热辣点评'}
-        </button>
+      <div className="relative mb-8">
+        {/* 放射状的光晕效果 */}
+        {!isLoading && bookmarks.length > 0 && !comment && (
+          <div className="absolute top-1/2 right-6 transform -translate-y-1/2 w-48 h-48 bg-blue-400 rounded-full opacity-10 filter blur-xl animate-pulse"></div>
+        )}
+        
+        <div className="flex justify-between items-center mb-4 relative">
+          <h2 className="text-xl font-semibold">网络人格分析</h2>
+          <button
+            onClick={generateComment}
+            disabled={isLoading || bookmarks.length === 0}
+            className={`relative px-7 py-3.5 rounded-lg text-white font-bold shadow-lg ${
+              isLoading 
+                ? 'bg-gray-400 cursor-not-allowed' 
+                : 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 transform hover:translate-y-[-2px] hover:shadow-xl transition-all'
+            }`}
+          >
+            <span className="flex items-center">
+              {isLoading ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  分析中...
+                </>
+              ) : (
+                <>
+                  <span className="text-lg mr-2">✨</span> 
+                  开始分析
+                  <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                  </svg>
+                </>
+              )}
+            </span>
+            
+            {/* 点击涟漪效果 */}
+            {!isLoading && bookmarks.length > 0 && (
+              <span className="absolute inset-0 rounded-lg overflow-hidden">
+                <span className="absolute inset-0 rounded-lg bg-white opacity-0 hover:opacity-20 transition-opacity"></span>
+              </span>
+            )}
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -523,11 +555,11 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
       )}
 
       {comment ? (
-        <div className="p-5 bg-gradient-to-r from-red-50 to-orange-50 rounded-lg border border-orange-100 relative">
+        <div className="p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100 relative">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center">
-            <span className="text-2xl mr-2">🔥</span>
-              <h3 className="text-lg font-medium text-red-600">热辣点评</h3>
+            <span className="text-2xl mr-2">🧠</span>
+              <h3 className="text-lg font-medium text-blue-700">网络人格分析</h3>
             </div>
             
             {/* 超级醒目的卡片生成按钮 */}
@@ -637,8 +669,8 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
       ) : (
         <div className="p-5 bg-gray-50 rounded-lg border border-gray-200 text-center text-gray-500">
           {bookmarks.length > 0 
-            ? '点击"点评"按钮，获取你的上网习惯热辣点评'
-            : '请先上传书签，然后再生成点评'}
+            ? '点击"开始分析"按钮，获取您的专属网络人格分析'
+            : '请先上传书签，然后再进行网络人格分析'}
         </div>
       )}
 
@@ -659,7 +691,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-auto p-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">你的专属点评卡片</h3>
+              <h3 className="text-xl font-semibold">您的专属网络人格卡片</h3>
               <button onClick={() => setShowCardModal(false)} className="text-gray-500 hover:text-gray-700">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -682,7 +714,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
               <div 
                 className="absolute top-0 left-0 w-full h-16 z-0"
                 style={{
-                  background: 'linear-gradient(135deg, #FF416C 0%, #FF4B2B 100%)',
+                  background: 'linear-gradient(135deg, #4F46E5 0%, #0EA5E9 100%)',
                 }}
               ></div>
               
@@ -695,9 +727,9 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
                       className="w-10 h-10 flex items-center justify-center rounded-full"
                       style={{ background: 'rgba(255,255,255,0.9)' }}
                     >
-                      <span className="text-xl">🔥</span>
+                      <span className="text-xl">🧠</span>
                     </div>
-                    <h2 className="text-white font-bold text-lg">书签热辣点评</h2>
+                    <h2 className="text-white font-bold text-lg">网络人格分析</h2>
                   </div>
                   <div 
                     className="text-xs text-white px-2 py-1 rounded-full"
@@ -715,7 +747,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
                   <h1 
                     className="text-xl font-black inline-block"
                     style={{ 
-                      color: '#FF416C',
+                      color: '#4F46E5',
                       textShadow: '1px 1px 0 rgba(0,0,0,0.1)',
                       fontFamily: '"Arial Black", "Noto Sans SC", sans-serif',
                       letterSpacing: '0.5px',
@@ -727,9 +759,22 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
                   <div 
                     className="w-16 h-1 mx-auto mt-1"
                     style={{ 
-                      background: 'linear-gradient(90deg, transparent, #FF416C, transparent)',
+                      background: 'linear-gradient(90deg, transparent, #4F46E5, transparent)',
                     }}
                   ></div>
+                  
+                  {/* 添加网络人格标签 */}
+                  <div className="flex flex-wrap justify-center gap-1 mt-3">
+                    <span className="inline-block px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-full border border-indigo-100">
+                      #技术探索者
+                    </span>
+                    <span className="inline-block px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-full border border-indigo-100">
+                      #知识收藏家
+                    </span>
+                    <span className="inline-block px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-full border border-indigo-100">
+                      #数字生活者
+                    </span>
+                  </div>
                 </div>
                 
                 {/* 内容区域 - 改进字体和样式提高清晰度 */}
@@ -821,6 +866,41 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {comment && (
+        <div className="mt-6">
+          <button
+            onClick={saveCard}
+            disabled={isLoading}
+            className="block w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition disabled:opacity-50"
+          >
+            {isLoading ? '生成中...' : '下载卡片'}
+          </button>
+          <p className="text-center text-gray-500 text-sm mt-2">
+            下载您的专属网络人格卡片，与朋友分享您的独特网络形象！
+          </p>
+        </div>
+      )}
+
+      {/* 悬浮的开始分析按钮 */}
+      {bookmarks.length > 0 && !isLoading && !comment && (
+        <div className="fixed bottom-8 right-8 z-30">
+          <button
+            onClick={generateComment}
+            className="group bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-full shadow-lg p-4 flex items-center hover:shadow-xl transform hover:scale-105 transition-all"
+          >
+            <span className="flex items-center">
+              <span className="text-xl mr-2">✨</span>
+              <span className="font-bold">开始分析</span>
+              <span className="w-0 overflow-hidden group-hover:w-5 transition-all duration-300">
+                <svg className="ml-1.5 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                </svg>
+              </span>
+            </span>
+          </button>
         </div>
       )}
     </div>
