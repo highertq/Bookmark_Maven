@@ -558,7 +558,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
         <div className="p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-100 relative">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center">
-            <span className="text-2xl mr-2">🧠</span>
+              <span className="text-2xl mr-2">🧠</span>
               <h3 className="text-lg font-medium text-blue-700">网络人格分析</h3>
             </div>
             
@@ -580,7 +580,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
                   <svg className="w-4 h-4 mr-1 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                   </svg>
-                  <span>完全免费，已有<span className="font-bold text-red-500 mx-1">97%</span>用户使用</span>
+                  <span>与朋友分享您的独特网络形象！</span>
                 </div>
               </div>
             )}
@@ -866,21 +866,6 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
               </div>
             </div>
           </div>
-        </div>
-      )}
-
-      {comment && (
-        <div className="mt-6">
-          <button
-            onClick={saveCard}
-            disabled={isLoading}
-            className="block w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 transition disabled:opacity-50"
-          >
-            {isLoading ? '生成中...' : '下载卡片'}
-          </button>
-          <p className="text-center text-gray-500 text-sm mt-2">
-            下载您的专属网络人格卡片，与朋友分享您的独特网络形象！
-          </p>
         </div>
       )}
 
