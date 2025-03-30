@@ -56,6 +56,19 @@ export default function RootLayout({
   return (
     <html lang="zh-CN">
       <head>
+        {/* Google Analytics 跟踪代码 */}
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-K0HG9EKGWD"></script>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-K0HG9EKGWD');
+            `
+          }}
+        />
+        
         {/* 添加结构化数据 */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{
           __html: JSON.stringify({
@@ -74,6 +87,7 @@ export default function RootLayout({
           })
         }} />
       </head>
+      
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning
