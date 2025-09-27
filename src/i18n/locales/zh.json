@@ -1,0 +1,166 @@
+{
+  "common": {
+    "loading": "加载中...",
+    "error": "错误",
+    "success": "成功",
+    "cancel": "取消",
+    "confirm": "确认",
+    "save": "保存",
+    "delete": "删除",
+    "edit": "编辑",
+    "close": "关闭",
+    "back": "返回",
+    "next": "下一步",
+    "previous": "上一步",
+    "search": "搜索",
+    "filter": "筛选",
+    "all": "全部",
+    "none": "无",
+    "yes": "是",
+    "no": "否"
+  },
+  "header": {
+    "title": "书签专家",
+    "subtitle": "为您的浏览习惯生成专属网络人格画像",
+    "description": "根据您的书签，发现您的网络身份"
+  },
+  "hero": {
+    "title": "发现您隐藏的网络人格",
+    "description": "您的书签透露了什么样的性格和习惯？上传您的浏览器书签，AI将深度分析并给您专属网络人格画像。",
+    "stats": "✨ 已有<strong>5000+</strong>用户发现了自己的网络性格 ✨",
+    "cta": "上传书签，解锁你的网络人格"
+  },
+  "features": {
+    "title": "专业分析，个性洞察",
+    "aiAnalysis": {
+      "title": "AI深度分析",
+      "description": "先进算法智能分析您的书签内容、类别分布和浏览偏好，揭示您的网络行为模式"
+    },
+    "personalityTags": {
+      "title": "专属性格标签",
+      "description": "根据分析结果为您生成独特网络身份标签，如'科技探索家'、'知识收藏家'等"
+    },
+    "beautifulCards": {
+      "title": "精美分享卡片",
+      "description": "自动生成个性化图片卡片，展示您的网络人格，随时保存或分享给朋友"
+    }
+  },
+  "security": {
+    "title": "100% 安全和隐私保护",
+    "description": "您的书签数据完全在本地处理，我们不会存储或分享您的个人浏览历史。分析完成后，您可以选择是否保存结果。"
+  },
+  "analytics": {
+    "title": "书签数据分析",
+    "totalBookmarks": "总书签数",
+    "categories": "分类数", 
+    "domains": "域名数",
+    "duplicates": "重复书签",
+    "loadedBookmarks": "已加载 {count} 个书签",
+    "generatedAt": "数据生成时间: {time}",
+    "tabs": {
+      "overview": "总览",
+      "categories": "分类",
+      "domains": "域名", 
+      "duplicates": "重复项"
+    },
+    "yearDistribution": "书签收藏年份分布",
+    "topCategory": "内容最多的分类: {category}",
+    "bookmarkCount": "{count} 个书签",
+    "categoryDistribution": "分类分布",
+    "frequentWebsites": "常用网站",
+    "duplicateBookmarks": "重复书签",
+    "noDuplicates": "没有找到重复的书签，干得好！",
+    "duplicateCopies": "{count} 个副本",
+    "showingTop": "显示前 {shown} 个，共 {total} 个",
+    "moreNotShown": "还有 {count} 个未显示",
+    "noBookmarksMessage": "上传书签后可查看分析结果",
+    "analyzingMessage": "正在分析书签数据...",
+    "topCategoryWithCount": "最多内容的分类: {category}",
+    "containsBookmarks": "包含 {count} 个书签",
+    "moreBookmarksNotShown": "还有 {count} 个书签未显示",
+    "categoryDistributionTitle": "分类分布",
+    "frequentWebsitesTitle": "常用网站",
+    "duplicateBookmarksTitle": "重复书签",
+    "noDuplicatesFound": "没有找到重复的书签，干得好！",
+    "showingTopResults": "显示前 {shown} 个，共 {total} 个",
+    "yearDistributionTitle": "书签收藏年份分布",
+    "bookmarksCount": "{count} 个书签",
+    "year": "年",
+    "bookmarksQuantity": "书签数量",
+    "duplicateCount": "{count} 个副本"
+  },
+  "comment": {
+    "title": "网络人格分析",
+    "startAnalysis": "开始分析",
+    "analyzing": "分析中...",
+    "earliestBookmark": "最早收藏的书签",
+    "collectionDate": "收藏日期:",
+    "daysAgo": "天",
+    "analysisResult": "网络人格分析",
+    "generateCard": "免费生成卡片 ✨",
+    "sharePrompt": "与朋友分享您的独特网络形象！",
+    "newFeature": "🎁 新功能!",
+    "cardBanner": {
+      "title": "生成你的专属卡片",
+      "features": {
+        "highQuality": "高清图片",
+        "saveShare": "随时保存分享",
+        "usage": "已有97%用户使用"
+      },
+      "generate": "立即生成"
+    },
+    "cardModal": {
+      "title": "您的专属网络人格卡片",
+      "save": "免费保存我的专属卡片",
+      "saving": "正在生成图片...",
+      "saveSuccess": "✅ 图片已保存到你的下载文件夹",
+      "disclaimer": "完全免费，图片将自动下载到你的设备"
+    },
+    "floatingButton": "开始分析",
+    "noBookmarks": "请先上传书签，然后再进行网络人格分析",
+    "clickToAnalyze": "点击开始分析按钮，获取您的专属网络人格分析",
+    "loadingMessages": [
+      "分析您的书签中...",
+      "构建人格模型分析...",
+      "提取隐藏的行为模式...",
+      "正在生成网络画像...",
+      "挖掘您的兴趣偏好...",
+      "这需要一点时间，请耐心等待...",
+      "正在连接AI大脑分析模型..."
+    ],
+    "digitalPersonalityAnalysis": "网络人格分析",
+    "earliestBookmarkTitle": "最早收藏的书签",
+    "collectionDateLabel": "收藏日期:",
+    "daysAgoLabel": "距今:",
+    "analysisResultTitle": "网络人格分析",
+    "generateCardFree": "免费生成卡片 ✨",
+    "shareWithFriends": "与朋友分享您的独特网络形象！",
+    "newFeatureLabel": "🎁 新功能!",
+    "generateYourCard": "生成你的专属卡片",
+    "highQualityImage": "高清图片",
+    "saveShareAnytime": "随时保存分享",
+    "userUsagePercent": "已有97%用户使用",
+    "generateNow": "立即生成",
+    "preparingComment": "准备生成评论...",
+    "defaultNickname": "网络达人"
+  },
+  "card": {
+    "title": "网络人格分析",
+    "website": "www.bookmarkmaven.space",
+    "tags": {
+      "techExplorer": "#技术探索者",
+      "knowledgeCollector": "#知识收藏家",
+      "digitalNative": "#数字生活者"
+    }
+  },
+  "footer": {
+    "title": "书签专家",
+    "subtitle": "探索你的网络性格，发现真实的自我",
+    "copyright": "© {year} 书签专家",
+    "privacyPolicy": "隐私政策"
+  },
+  "language": {
+    "switch": "切换语言",
+    "current": "当前: {language}"
+  }
+}

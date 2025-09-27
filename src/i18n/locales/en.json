@@ -1,0 +1,238 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "search": "Search",
+    "filter": "Filter",
+    "all": "All",
+    "none": "None",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "header": {
+    "title": "Bookmark Expert",
+    "subtitle": "Generate exclusive digital personality profiles based on your browsing habits",
+    "description": "Discover your hidden online personality"
+  },
+  "hero": {
+    "title": "Discover Your Hidden Digital Personality",
+    "description": "What does your bookmark collection reveal about your personality and habits? Upload your browser bookmarks and AI will analyze them deeply to give you an exclusive digital personality profile.",
+    "stats": "✨ Over <strong>5000+</strong> users have discovered their digital personalities ✨",
+    "cta": "Upload bookmarks to unlock your digital persona"
+  },
+  "upload": {
+    "title": "Upload Bookmark File",
+    "helpButton": "How to export bookmarks?",
+    "dragText": "Drag HTML bookmark file here, or click to select file",
+    "processing": "Processing bookmarks...",
+    "success": "Successfully parsed {count} bookmarks, ready for analysis!",
+    "error": "Failed to parse bookmarks: {error}",
+    "invalidFile": "Please select a valid HTML file",
+    "supportedFormats": "Supports bookmark HTML files exported from Chrome, Firefox, Edge and other browsers",
+    "reading": "Reading file: {filename}..."
+  },
+  "features": {
+    "title": "Professional Analysis, Personality Insights",
+    "aiAnalysis": {
+      "title": "AI Deep Analysis",
+      "description": "Advanced algorithms intelligently analyze your bookmark content, category distribution and browsing preferences to reveal your online behavior patterns"
+    },
+    "personalityTags": {
+      "title": "Exclusive Personality Tags", 
+      "description": "Generate unique digital identity tags based on analysis results, such as 'Tech Explorer', 'Knowledge Collector', etc."
+    },
+    "beautifulCards": {
+      "title": "Beautiful Sharing Cards",
+      "description": "Automatically generate personalized image cards showcasing your digital personality, save or share with friends anytime"
+    }
+  },
+  "security": {
+    "title": "100% Security and Privacy Protection",
+    "description": "Your bookmark data is processed entirely locally. We do not store or share your personal browsing history. You can choose whether to save results after analysis."
+  },
+  "analytics": {
+    "title": "Bookmark Data Analysis",
+    "totalBookmarks": "Total Bookmarks",
+    "categories": "Categories", 
+    "domains": "Domains",
+    "duplicates": "Duplicate Bookmarks",
+    "loadedBookmarks": "Loaded {count} bookmarks",
+    "generatedAt": "Data generated at: {time}",
+    "tabs": {
+      "overview": "Overview",
+      "categories": "Categories",
+      "domains": "Domains", 
+      "duplicates": "Duplicates"
+    },
+    "yearDistribution": "Bookmark Collection Year Distribution",
+    "topCategory": "Category with most content: {category}",
+    "bookmarkCount": "{count} bookmarks",
+    "categoryDistribution": "Category Distribution",
+    "frequentWebsites": "Frequent Websites",
+    "duplicateBookmarks": "Duplicate Bookmarks",
+    "noDuplicates": "No duplicate bookmarks found, well done!",
+    "duplicateCopies": "{count} copies",
+    "showingTop": "Showing top {shown}, total {total}",
+    "moreNotShown": "{count} more not shown",
+    "noBookmarksMessage": "Upload bookmarks to view analysis results",
+    "analyzingMessage": "Analyzing bookmark data...",
+    "topCategoryWithCount": "Category with most content: {category}",
+    "containsBookmarks": "Contains {count} bookmarks",
+    "moreBookmarksNotShown": "{count} more bookmarks not shown",
+    "categoryDistributionTitle": "Category Distribution",
+    "frequentWebsitesTitle": "Frequent Websites",
+    "duplicateBookmarksTitle": "Duplicate Bookmarks",
+    "noDuplicatesFound": "No duplicate bookmarks found, well done!",
+    "showingTopResults": "Showing top {shown}, total {total}",
+    "yearDistributionTitle": "Bookmark Collection Year Distribution",
+    "bookmarksCount": "{count} bookmarks",
+    "year": "Year",
+    "bookmarksQuantity": "Bookmark quantity",
+    "duplicateCount": "{count} copies"
+  },
+  "comment": {
+    "title": "Digital Personality Analysis",
+    "startAnalysis": "Start Analysis",
+    "analyzing": "Analyzing...",
+    "earliestBookmark": "Earliest Bookmark",
+    "collectionDate": "Collection Date:",
+    "daysAgo": "Days ago:",
+    "analysisResult": "Digital Personality Analysis",
+    "generateCard": "Generate Card ✨",
+    "sharePrompt": "Share your unique digital image with friends!",
+    "newFeature": "🎁 New Feature!",
+    "cardBanner": {
+      "title": "Generate Your Exclusive Card",
+      "features": {
+        "highQuality": "High Quality",
+        "saveShare": "Save & Share Anytime",
+        "usage": "97% users use this feature"
+      },
+      "generate": "Generate Now"
+    },
+    "cardModal": {
+      "title": "Your Exclusive Digital Personality Card",
+      "save": "Free Save My Exclusive Card",
+      "saving": "Generating image...",
+      "saveSuccess": "✅ Image saved to your downloads folder",
+      "disclaimer": "Completely free, image will be automatically downloaded to your device"
+    },
+    "floatingButton": "Start Analysis",
+    "noBookmarks": "Please upload bookmarks first, then perform digital personality analysis",
+    "clickToAnalyze": "Click 'Start Analysis' button to get your exclusive digital personality analysis",
+    "loadingMessages": [
+      "Analyzing your bookmarks...",
+      "Building personality model analysis...",
+      "Extracting hidden behavior patterns...",
+      "Generating digital profile...",
+      "Mining your interest preferences...",
+      "This takes a moment, please wait...",
+      "Connecting to AI brain analysis model..."
+    ],
+    "digitalPersonalityAnalysis": "Digital Personality Analysis",
+    "earliestBookmarkTitle": "Earliest Bookmark",
+    "collectionDateLabel": "Collection Date:",
+    "daysAgoLabel": "Days ago:",
+    "analysisResultTitle": "Digital Personality Analysis",
+    "generateCardFree": "Generate Card ✨",
+    "shareWithFriends": "Share your unique digital image with friends!",
+    "newFeatureLabel": "🎁 New Feature!",
+    "generateYourCard": "Generate Your Exclusive Card",
+    "highQualityImage": "High Quality",
+    "saveShareAnytime": "Save & Share Anytime",
+    "userUsagePercent": "97% of users already use this feature",
+    "generateNow": "Generate Now",
+    "preparingComment": "Preparing to generate comment...",
+    "defaultNickname": "Digital Expert"
+  },
+  "card": {
+    "title": "Digital Personality Analysis",
+    "website": "www.bookmarkmaven.space",
+    "tags": {
+      "techExplorer": "#Tech Explorer",
+      "knowledgeCollector": "#Knowledge Collector", 
+      "digitalNative": "#Digital Native"
+    }
+  },
+  "exportHelp": {
+    "title": "How to Export Browser Bookmarks",
+    "chrome": "Chrome",
+    "firefox": "Firefox", 
+    "edge": "Edge",
+    "safari": "Safari",
+    "mobile": "Mobile Browser",
+    "platforms": {
+      "windows": "Windows",
+      "mac": "Mac",
+      "linux": "Linux",
+      "android": "Android",
+      "ios": "iOS"
+    },
+    "steps": {
+      "chrome": {
+        "windows": [
+          "Click the three-dot icon in the top right corner",
+          "Select 'Bookmarks' > 'Bookmark manager' (Shortcut: Ctrl+Shift+O)",
+          "Click the three-dot icon in the bookmark manager's top right corner",
+          "Select 'Export bookmarks'",
+          "Choose save location and save the .html file"
+        ],
+        "mac": [
+          "Click the three-dot icon in the top right corner", 
+          "Select 'Bookmarks' > 'Bookmark manager' (Shortcut: ⌘+Option+B)",
+          "Click the three-dot icon in the bookmark manager's top right corner",
+          "Select 'Export bookmarks'",
+          "Choose save location and save the .html file"
+        ]
+      },
+      "firefox": {
+        "windows": [
+          "Click the three-line menu button in the top right corner",
+          "Select 'Bookmarks' > 'Manage bookmarks' (Shortcut: Ctrl+Shift+B)",
+          "Click 'Import and Backup' > 'Export Bookmarks to HTML'",
+          "Choose save location and save the .html file"
+        ]
+      },
+      "safari": {
+        "mac": [
+          "Click 'File' > 'Export' > 'Bookmarks'",
+          "Choose save location and save the .html file"
+        ],
+        "ios": [
+          "Safari does not support direct bookmark export from iOS devices",
+          "Need to sync bookmarks to Mac or PC via iCloud",
+          "Then export on computer following browser-specific steps"
+        ]
+      }
+    },
+    "tips": {
+      "title": "Tips",
+      "items": [
+        "Exported bookmark files are usually saved in HTML format",
+        "Some browsers may name exported files as 'bookmarks.html' or '书签.html'",
+        "Exported bookmark files can be directly uploaded to this tool for analysis",
+        "If you have many bookmarks, the export process may take some time"
+      ]
+    }
+  },
+  "footer": {
+    "title": "Bookmark Expert",
+    "subtitle": "Explore your digital personality, discover your true self",
+    "copyright": "© {year} Bookmark Expert",
+    "privacyPolicy": "Privacy Policy"
+  },
+  "language": {
+    "switch": "Switch Language",
+    "current": "Current: {language}"
+  }
+}

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Bookmark, analyzeBookmarks, findFullestCategory, findDuplicateBookmarks } from '@/lib/bookmark-parser';
+import { useTranslations } from 'next-intl';
 
 interface BookmarkAnalyticsProps {
   bookmarks: Bookmark[];
@@ -24,6 +25,7 @@ interface CategoryResult {
 }
 
 export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps) {
+  const t = useTranslations('analytics');
   const [activeTab, setActiveTab] = useState<'overview' | 'categories' | 'domains' | 'duplicates'>('overview');
   const [fullBookmarks, setFullBookmarks] = useState<Bookmark[]>([]);
   const [insights, setInsights] = useState<AnalysisResult | null>(null);
@@ -49,13 +51,13 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
       
       setLoading(false);
       
-      console.log("分析结果:", {
-        总书签数: bookmarksCopy.length,
-        分类数: Object.keys(newInsights.categories).length,
-        域名数: Object.keys(newInsights.domains).length,
-        重复数: Object.keys(newDuplicates).length,
-        年份分布: newInsights.yearDistribution,
-        最大分类: newFullestCategory?.category
+      console.log("Analysis results:", {
+        totalBookmarks: bookmarksCopy.length,
+        categories: Object.keys(newInsights.categories).length,
+        domains: Object.keys(newInsights.domains).length,
+        duplicates: Object.keys(newDuplicates).length,
+        yearDistribution: newInsights.yearDistribution,
+        topCategory: newFullestCategory?.category
       });
     }
   }, [bookmarks]);
@@ -63,7 +65,7 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
   if (!bookmarks || bookmarks.length === 0) {
     return (
       <div className="p-4 bg-gray-50 rounded-lg text-center text-gray-500">
-        上传书签后可查看分析结果
+        {t('noBookmarksMessage')}
       </div>
     );
   }
@@ -72,7 +74,7 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
     return (
       <div className="p-4 bg-white rounded-lg shadow text-center">
         <div className="inline-block animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mb-2"></div>
-        <p className="text-gray-600">正在分析书签数据...</p>
+        <p className="text-gray-600">{t('analyzingMessage')}</p>
       </div>
     );
   }
@@ -90,31 +92,31 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
   
   return (
     <div className="bg-white rounded-lg shadow p-4">
-      <h2 className="text-xl font-semibold mb-4">书签数据分析</h2>
+      <h2 className="text-xl font-semibold mb-4">{t('title')}</h2>
       
       <div className="text-xs text-gray-500 mb-2">
-        已加载 {bookmarksCount} 个书签 | 数据生成时间: {new Date().toLocaleString()}
+        {t('loadedBookmarks', { count: bookmarksCount })} | {t('generatedAt', { time: new Date().toLocaleString() })}
       </div>
       
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-blue-50 p-4 rounded-lg text-center">
           <div className="text-3xl font-bold text-blue-600">{bookmarksCount}</div>
-          <div className="text-sm text-gray-600">总书签数</div>
+          <div className="text-sm text-gray-600">{t('totalBookmarks')}</div>
         </div>
         
         <div className="bg-green-50 p-4 rounded-lg text-center">
           <div className="text-3xl font-bold text-green-600">{categoriesCount}</div>
-          <div className="text-sm text-gray-600">分类数</div>
+          <div className="text-sm text-gray-600">{t('categories')}</div>
         </div>
         
         <div className="bg-purple-50 p-4 rounded-lg text-center">
           <div className="text-3xl font-bold text-purple-600">{domainsCount}</div>
-          <div className="text-sm text-gray-600">域名数</div>
+          <div className="text-sm text-gray-600">{t('domains')}</div>
         </div>
         
         <div className="bg-red-50 p-4 rounded-lg text-center">
           <div className="text-3xl font-bold text-red-600">{duplicateCount}</div>
-          <div className="text-sm text-gray-600">重复书签</div>
+          <div className="text-sm text-gray-600">{t('duplicates')}</div>
         </div>
       </div>
       
@@ -129,7 +131,7 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <span className="inline-block mr-2">📊</span>总览
+              <span className="inline-block mr-2">📊</span>{t('tabs.overview')}
             </button>
           </li>
           <li className="mr-2 flex-1">
@@ -141,7 +143,7 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <span className="inline-block mr-2">📁</span>分类
+              <span className="inline-block mr-2">📁</span>{t('tabs.categories')}
             </button>
           </li>
           <li className="mr-2 flex-1">
@@ -153,7 +155,7 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <span className="inline-block mr-2">🌐</span>域名
+              <span className="inline-block mr-2">🌐</span>{t('tabs.domains')}
             </button>
           </li>
           <li className="flex-1">
@@ -165,7 +167,7 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
                   : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'
               }`}
             >
-              <span className="inline-block mr-2">🔄</span>重复项 
+              <span className="inline-block mr-2">🔄</span>{t('tabs.duplicates')} 
               {duplicateCount > 0 && (
                 <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-800 text-xs rounded-full">
                   {duplicateCount}
@@ -181,7 +183,7 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
           <div>
             {insights.yearDistribution.length > 0 && (
               <div className="mb-6">
-                <h3 className="text-lg font-medium mb-3 text-blue-700">书签收藏年份分布</h3>
+                <h3 className="text-lg font-medium mb-3 text-blue-700">{t('yearDistributionTitle')}</h3>
                 
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 mt-4">
                   {insights.yearDistribution.map(([year, count], index: number) => {
@@ -190,8 +192,8 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
                     
                     return (
                       <div key={index} className="bg-blue-50 rounded-lg border border-blue-100 p-3 text-center">
-                        <div className="text-lg font-bold text-blue-800">{year}年</div>
-                        <div className="mt-1 text-sm text-gray-600">书签数量</div>
+                        <div className="text-lg font-bold text-blue-800">{year} {t('year')}</div>
+                        <div className="mt-1 text-sm text-gray-600">{t('bookmarksQuantity')}</div>
                         <div className="mt-1 font-bold text-xl text-blue-600">{count}</div>
                         <div className="mt-2 w-full h-2 bg-gray-200 rounded-full overflow-hidden">
                           <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.max(Number(count) / maxCount * 100, 5)}%` }}></div>
@@ -205,8 +207,8 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
             
             {fullestCategory && (
               <div className="mb-6">
-                <h3 className="text-lg font-medium mb-3">最多内容的分类: <span className="text-blue-600">{fullestCategory.category}</span></h3>
-                <p className="text-sm text-gray-600 mb-2">包含 {fullestCategory.count} 个书签</p>
+                <h3 className="text-lg font-medium mb-3">{t('topCategoryWithCount', { category: fullestCategory.category })}</h3>
+                <p className="text-sm text-gray-600 mb-2">{t('containsBookmarks', { count: fullestCategory.count })}</p>
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mt-3">
                   {fullestCategory.bookmarks.slice(0, 9).map((bookmark: Bookmark, index: number) => (
@@ -225,7 +227,7 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
                 
                 {fullestCategory.count > 9 && (
                   <p className="text-center text-gray-500 mt-2 text-sm">
-                    还有 {fullestCategory.count - 9} 个书签未显示
+                    {t('moreBookmarksNotShown', { count: fullestCategory.count - 9 })}
                   </p>
                 )}
               </div>
@@ -235,7 +237,7 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
         
         {activeTab === 'categories' && insights && (
           <div>
-            <h3 className="text-lg font-medium mb-3">分类分布</h3>
+            <h3 className="text-lg font-medium mb-3">{t('categoryDistributionTitle')}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {insights.topCategories.map(([category, count], index: number) => (
                 <div key={index} className="bg-gray-50 p-3 rounded-lg border border-gray-200">
@@ -255,7 +257,7 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
             
             <p className="text-center text-gray-500 mt-4 text-sm">
               {Object.keys(insights.categories).length > insights.topCategories.length && (
-                `显示前 ${insights.topCategories.length} 个，共 ${Object.keys(insights.categories).length} 个分类`
+                t('showingTopResults', { shown: insights.topCategories.length, total: Object.keys(insights.categories).length })
               )}
             </p>
           </div>
@@ -263,7 +265,7 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
         
         {activeTab === 'domains' && insights && (
           <div>
-            <h3 className="text-lg font-medium mb-3">常用网站</h3>
+            <h3 className="text-lg font-medium mb-3">{t('frequentWebsitesTitle')}</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {insights.topDomains.map(([domain, count], index: number) => (
                 <div key={index} className="flex items-center p-3 bg-gray-50 rounded-lg border border-gray-200">
@@ -298,7 +300,7 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
             
             <p className="text-center text-gray-500 mt-4 text-sm">
               {Object.keys(insights.domains).length > insights.topDomains.length && (
-                `显示前 ${insights.topDomains.length} 个，共 ${Object.keys(insights.domains).length} 个域名`
+                t('showingTopResults', { shown: insights.topDomains.length, total: Object.keys(insights.domains).length })
               )}
             </p>
           </div>
@@ -306,11 +308,11 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
         
         {activeTab === 'duplicates' && (
           <div>
-            <h3 className="text-lg font-medium mb-3">重复书签</h3>
+            <h3 className="text-lg font-medium mb-3">{t('duplicateBookmarksTitle')}</h3>
             
             {duplicateCount === 0 ? (
               <div className="text-center py-6 text-gray-500">
-                没有找到重复的书签，干得好！
+                {t('noDuplicatesFound')}
               </div>
             ) : (
               <div className="space-y-4">
@@ -327,7 +329,7 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
                         {url}
                       </a>
                       <span className="ml-2 px-2 py-0.5 bg-red-100 text-red-800 text-xs rounded-full">
-                        {bookmarkList.length}个副本
+                        {t('duplicateCount', { count: bookmarkList.length })}
                       </span>
                     </div>
                     
@@ -346,7 +348,7 @@ export default function BookmarkAnalytics({ bookmarks }: BookmarkAnalyticsProps)
                 
                 {Object.keys(duplicates).length > 10 && (
                   <p className="text-center text-gray-500 mt-2 text-sm">
-                    还有 {Object.keys(duplicates).length - 10} 组重复书签未显示
+                    {t('moreNotShown', { count: Object.keys(duplicates).length - 10 })}
                   </p>
                 )}
               </div>

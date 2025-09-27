@@ -7,6 +7,7 @@ import { QuestionMarkCircleIcon } from '@heroicons/react/24/outline';
 import ExportHelpDialog from './export-help-dialog';
 import BookmarkAnalytics from './bookmark-analytics';
 import BookmarkComment from './bookmark-comment';
+import { useTranslations } from 'next-intl';
 
 interface UploadBookmarkProps {
   onBookmarksProcessed?: (bookmarks: any[]) => void;
@@ -21,7 +22,8 @@ interface Bookmark {
 }
 
 export default function UploadBookmark({ onBookmarksProcessed }: UploadBookmarkProps) {
-  const [message, setMessage] = useState<string>('拖拽HTML书签文件到这里，或点击选择文件');
+  const t = useTranslations('upload');
+  const [message, setMessage] = useState<string>(t('dragText'));
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [showHelpDialog, setShowHelpDialog] = useState<boolean>(false);
   const [parsedBookmarks, setParsedBookmarks] = useState<any[]>([]);
@@ -29,7 +31,7 @@ export default function UploadBookmark({ onBookmarksProcessed }: UploadBookmarkP
 
   const processBookmarkFile = useCallback(async (content: string) => {
     setIsLoading(true);
-    setMessage('正在解析书签...');
+    setMessage(t('processing'));
     
     try {
       // 解析书签树，然后提取所有书签项
@@ -37,7 +39,7 @@ export default function UploadBookmark({ onBookmarksProcessed }: UploadBookmarkP
       const bookmarks = extractAllBookmarks(bookmarkTree);
       
       if (bookmarks.length === 0) {
-        setMessage('未找到有效的书签数据，请确认文件格式正确');
+        setMessage(t('invalidFile'));
         return;
       }
       
@@ -62,7 +64,7 @@ export default function UploadBookmark({ onBookmarksProcessed }: UploadBookmarkP
       });
       
       // 不再随机选取，使用全部书签
-      setMessage(`成功解析 ${bookmarksWithDates.length} 个书签，可以进行分析了！`);
+      setMessage(t('success', { count: bookmarksWithDates.length }));
       
       // 存储解析的书签（使用全部书签而不是随机选择）
       setParsedBookmarks(bookmarksWithDates);
@@ -76,11 +78,11 @@ export default function UploadBookmark({ onBookmarksProcessed }: UploadBookmarkP
       }
     } catch (error) {
       console.error('解析书签失败:', error);
-      setMessage(`解析书签失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      setMessage(t('error', { error: error instanceof Error ? error.message : 'Unknown error' }));
     } finally {
       setIsLoading(false);
     }
-  }, [onBookmarksProcessed]);
+  }, [onBookmarksProcessed, t]);
 
   // 生成过去n天内的随机日期
   function generateRandomPastDate(daysBack: number): string {
@@ -92,7 +94,7 @@ export default function UploadBookmark({ onBookmarksProcessed }: UploadBookmarkP
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length === 0) {
-      setMessage('请选择一个有效的HTML文件');
+      setMessage(t('invalidFile'));
       return;
     }
 
@@ -100,11 +102,11 @@ export default function UploadBookmark({ onBookmarksProcessed }: UploadBookmarkP
     
     // 检查文件类型
     if (!file.name.endsWith('.html') && !file.type.includes('html')) {
-      setMessage('请选择一个HTML格式的书签文件');
+      setMessage(t('invalidFile'));
       return;
     }
 
-    setMessage(`正在读取文件: ${file.name}...`);
+    setMessage(t('reading', { filename: file.name }));
     setIsLoading(true);
 
     try {
@@ -112,10 +114,10 @@ export default function UploadBookmark({ onBookmarksProcessed }: UploadBookmarkP
       await processBookmarkFile(content);
     } catch (error) {
       console.error('读取文件失败:', error);
-      setMessage(`读取文件失败: ${error instanceof Error ? error.message : '未知错误'}`);
+      setMessage(t('error', { error: error instanceof Error ? error.message : 'Unknown error' }));
       setIsLoading(false);
     }
-  }, [processBookmarkFile]);
+  }, [processBookmarkFile, t]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({ 
     onDrop,
@@ -130,14 +132,14 @@ export default function UploadBookmark({ onBookmarksProcessed }: UploadBookmarkP
     <div className="w-full">
       <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">上传书签文件</h2>
+          <h2 className="text-xl font-semibold">{t('title')}</h2>
           <button
             onClick={() => setShowHelpDialog(true)}
             className="text-blue-600 hover:text-blue-800 flex items-center"
-            title="查看如何导出书签"
+            title={t('helpButton')}
           >
             <QuestionMarkCircleIcon className="h-5 w-5 mr-1" />
-            <span>如何导出书签?</span>
+            <span>{t('helpButton')}</span>
           </button>
         </div>
 
@@ -175,7 +177,7 @@ export default function UploadBookmark({ onBookmarksProcessed }: UploadBookmarkP
               <div className="mt-4 w-16 h-16 border-t-4 border-blue-500 border-solid rounded-full animate-spin"></div>
             ) : (
               <p className="mt-2 text-sm text-gray-500">
-                支持从Chrome、Firefox、Edge等浏览器导出的书签HTML文件
+                {t('supportedFormats')}
               </p>
             )}
           </div>

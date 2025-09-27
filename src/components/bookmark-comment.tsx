@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useLocale, useTranslations } from 'next-intl';
 import { Bookmark, findEarliestBookmark } from '@/lib/bookmark-parser';
 
 interface BookmarkCommentProps {
@@ -8,12 +9,16 @@ interface BookmarkCommentProps {
 }
 
 export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
+  const locale = useLocale();
+  const t = useTranslations('comment');
+  const tCard = useTranslations('card');
+  
   const [comment, setComment] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [earliestBookmark, setEarliestBookmark] = useState<{ bookmark: Bookmark | null, daysAgo: number | null }>({ bookmark: null, daysAgo: null });
   const [progress, setProgress] = useState<number>(0);
-  const [loadingMessage, setLoadingMessage] = useState<string>('准备生成评论...');
+  const [loadingMessage, setLoadingMessage] = useState<string>(t('loadingMessages.0'));
   const [showCardModal, setShowCardModal] = useState<boolean>(false);
   const [nickname, setNickname] = useState<string>('');
   
@@ -56,7 +61,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
         if (lastBracketMatch && lastBracketMatch[1]) {
           setNickname(lastBracketMatch[1]);
         } else {
-          setNickname('网络达人'); // 默认外号
+          setNickname(locale === 'zh' ? '网络达人' : t('defaultNickname')); // 默认外号
         }
       }
     }
@@ -71,7 +76,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
     setIsLoading(true);
     setError(null);
     setProgress(0);
-    setLoadingMessage('准备生成评论...');
+    setLoadingMessage(t('preparingComment'));
     
     // 生成缓存键（使用书签标题的组合）
     const cacheKey = JSON.stringify(bookmarks.map(b => b.title).sort());
@@ -94,13 +99,13 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
       
       // 随机更换加载消息
       const messages = [
-        '分析您的书签中...',
-        '构建人格模型分析...',
-        '提取隐藏的行为模式...',
-        '正在生成网络画像...',
-        '挖掘您的兴趣偏好...',
-        '这需要一点时间，请耐心等待...',
-        '正在连接AI大脑分析模型...'
+        t('loadingMessages.0'),
+        t('loadingMessages.1'),
+        t('loadingMessages.2'),
+        t('loadingMessages.3'),
+        t('loadingMessages.4'),
+        t('loadingMessages.5'),
+        t('loadingMessages.6')
       ];
       
       setLoadingMessage(messages[Math.floor(Math.random() * messages.length)]);
@@ -111,7 +116,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
       // 增加超时时间到3分钟
       const timeoutController = setTimeout(() => controller.abort(), 180000);
       
-      const response = await fetch('/api/generate-comment', {
+      const response = await fetch(`/${locale}/api/generate-comment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -208,7 +213,8 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
       console.log("saveCard 函数开始执行");
       const loadingDiv = document.createElement('div');
       loadingDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]';
-      loadingDiv.innerHTML = '<div class="bg-white p-4 rounded-lg shadow-lg text-center"><div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mb-2"></div><p>正在生成图片...</p></div>';
+      const loadingText = locale === 'zh' ? '正在生成图片...' : 'Generating image...';
+      loadingDiv.innerHTML = `<div class="bg-white p-4 rounded-lg shadow-lg text-center"><div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mb-2"></div><p>${loadingText}</p></div>`;
       document.body.appendChild(loadingDiv);
       
       setTimeout(async () => {
@@ -292,7 +298,11 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
             
             // 下载图片
             const link = document.createElement('a');
-            link.download = `${nickname || '网络达人'}的书签点评.png`;
+            const defaultNickname = locale === 'zh' ? '网络达人' : 'Digital Expert';
+            const filename = locale === 'zh' 
+              ? `${nickname || defaultNickname}的书签点评.png`
+              : `${nickname || defaultNickname}_Bookmark_Review.png`;
+            link.download = filename;
             link.href = dataUrl;
             link.click();
             
@@ -305,7 +315,8 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
             // 显示成功提示
             const successToast = document.createElement('div');
             successToast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-[100]';
-            successToast.textContent = '✅ 图片已保存到你的下载文件夹';
+            const successMessage = locale === 'zh' ? '✅ 图片已保存到你的下载文件夹' : '✅ Image saved to your downloads folder';
+            successToast.textContent = successMessage;
             document.body.appendChild(successToast);
             
             // 3秒后移除成功提示
@@ -331,7 +342,11 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
               
               // 下载图片
               const link = document.createElement('a');
-              link.download = `${nickname || '网络达人'}的书签点评.png`;
+              const defaultNickname = locale === 'zh' ? '网络达人' : 'Digital Expert';
+              const filename = locale === 'zh' 
+                ? `${nickname || defaultNickname}的书签点评.png`
+                : `${nickname || defaultNickname}_Bookmark_Review.png`;
+              link.download = filename;
               link.href = dataUrl;
               link.click();
               
@@ -341,7 +356,8 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
               // 显示成功提示
               const successToast = document.createElement('div');
               successToast.className = 'fixed bottom-4 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-[100]';
-              successToast.textContent = '✅ 图片已保存到你的下载文件夹';
+              const successMessage = locale === 'zh' ? '✅ 图片已保存到你的下载文件夹' : '✅ Image saved to your downloads folder';
+            successToast.textContent = successMessage;
               document.body.appendChild(successToast);
               
               // 3秒后移除成功提示
@@ -357,12 +373,14 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
         } catch (error) {
           console.error('创建卡片元素失败:', error);
           document.body.removeChild(loadingDiv);
-          alert('无法生成图片，请尝试使用浏览器的截图功能');
+          const alertMessage = locale === 'zh' ? '无法生成图片，请尝试使用浏览器的截图功能' : 'Unable to generate image, please try using browser screenshot function';
+          alert(alertMessage);
         }
       }, 300);
     } catch (error) {
       console.error('初始化失败:', error);
-      alert('无法生成图片，请使用浏览器截图功能保存');
+      const alertMessage = locale === 'zh' ? '无法生成图片，请使用浏览器截图功能保存' : 'Unable to generate image, please use browser screenshot function to save';
+      alert(alertMessage);
     }
   };
 
@@ -421,7 +439,11 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
       
       // 下载图片
       const link = document.createElement('a');
-      link.download = `${nickname || '网络达人'}的书签点评.png`;
+      const defaultNickname = locale === 'zh' ? '网络达人' : 'Digital Expert';
+      const filename = locale === 'zh' 
+        ? `${nickname || defaultNickname}的书签点评.png`
+        : `${nickname || defaultNickname}_Bookmark_Review.png`;
+      link.download = filename;
       link.href = data;
       link.click();
       
@@ -456,17 +478,37 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
     // 显示截图指导
     const screenshotDiv = document.createElement('div');
     screenshotDiv.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[100]';
+    
+    const screenshotGuide = locale === 'zh' ? {
+      title: '请使用截图功能',
+      description: '图片自动生成失败，请按以下步骤手动截图：',
+      steps: [
+        'Windows系统: 按键盘上的 <span class="bg-gray-200 px-1 py-0.5 rounded">Windows徽标键 + Shift + S</span>',
+        'Mac系统: 按键盘上的 <span class="bg-gray-200 px-1 py-0.5 rounded">Command + Shift + 4</span>',
+        '选择要截取的卡片区域',
+        '保存截图'
+      ],
+      buttonText: '知道了'
+    } : {
+      title: 'Please use screenshot function',
+      description: 'Automatic image generation failed, please follow these steps to take a manual screenshot:',
+      steps: [
+        'Windows: Press <span class="bg-gray-200 px-1 py-0.5 rounded">Windows Key + Shift + S</span>',
+        'Mac: Press <span class="bg-gray-200 px-1 py-0.5 rounded">Command + Shift + 4</span>',
+        'Select the card area to capture',
+        'Save the screenshot'
+      ],
+      buttonText: 'Got it'
+    };
+    
     screenshotDiv.innerHTML = `
       <div class="bg-white p-6 rounded-lg shadow-lg text-center max-w-md">
-        <h3 class="text-lg font-semibold mb-2">请使用截图功能</h3>
-        <p class="mb-4">图片自动生成失败，请按以下步骤手动截图：</p>
+        <h3 class="text-lg font-semibold mb-2">${screenshotGuide.title}</h3>
+        <p class="mb-4">${screenshotGuide.description}</p>
         <ol class="text-left list-decimal pl-6 mb-4 space-y-2">
-          <li>Windows系统: 按键盘上的 <span class="bg-gray-200 px-1 py-0.5 rounded">Windows徽标键 + Shift + S</span></li>
-          <li>Mac系统: 按键盘上的 <span class="bg-gray-200 px-1 py-0.5 rounded">Command + Shift + 4</span></li>
-          <li>选择要截取的卡片区域</li>
-          <li>保存截图</li>
+          ${screenshotGuide.steps.map(step => `<li>${step}</li>`).join('')}
         </ol>
-        <button id="screenshot-guide-close" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow">知道了</button>
+        <button id="screenshot-guide-close" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded shadow">${screenshotGuide.buttonText}</button>
       </div>
     `;
     document.body.appendChild(screenshotDiv);
@@ -486,7 +528,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
         )}
         
         <div className="flex justify-between items-center mb-4 relative">
-          <h2 className="text-xl font-semibold">网络人格分析</h2>
+          <h2 className="text-xl font-semibold">{t('digitalPersonalityAnalysis')}</h2>
           <button
             onClick={generateComment}
             disabled={isLoading || bookmarks.length === 0}
@@ -503,12 +545,12 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  分析中...
+                  {t('analyzing')}
                 </>
               ) : (
                 <>
                   <span className="text-lg mr-2">✨</span> 
-                  开始分析
+                  {t('startAnalysis')}
                   <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
                   </svg>
@@ -536,7 +578,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
         <div className="p-4 mb-4 bg-blue-50 text-blue-800 rounded-md border border-blue-100">
           <div className="flex items-start mb-2">
             <span className="text-2xl mr-2">📅</span>
-            <h3 className="text-lg font-medium text-blue-700">最早收藏的书签</h3>
+            <h3 className="text-lg font-medium text-blue-700">{t('earliestBookmarkTitle')}</h3>
           </div>
           <div className="flex items-center mb-2">
             <BookmarkIcon />
@@ -549,8 +591,8 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
               {earliestBookmark.bookmark.title}
             </a>
           </div>
-          <p className="text-gray-700 mb-1"><span className="font-medium">收藏日期:</span> {earliestBookmark.bookmark.addDateFormatted}</p>
-          <p className="text-gray-700"><span className="font-medium">距今:</span> {earliestBookmark.daysAgo} 天</p>
+          <p className="text-gray-700 mb-1"><span className="font-medium">{t('collectionDateLabel')}</span> {earliestBookmark.bookmark.addDateFormatted}</p>
+          <p className="text-gray-700"><span className="font-medium">{t('daysAgoLabel')}</span> {earliestBookmark.daysAgo} {t('daysAgo')}</p>
         </div>
       )}
 
@@ -559,7 +601,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center">
               <span className="text-2xl mr-2">🧠</span>
-              <h3 className="text-lg font-medium text-blue-700">网络人格分析</h3>
+              <h3 className="text-lg font-medium text-blue-700">{t('analysisResultTitle')}</h3>
             </div>
             
             {/* 超级醒目的卡片生成按钮 */}
@@ -574,13 +616,13 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                   </svg>
-                  免费生成卡片 ✨
+                  {t('generateCardFree')}
                 </button>
                 <div className="text-sm text-gray-600 mt-1.5 flex items-center">
                   <svg className="w-4 h-4 mr-1 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                   </svg>
-                  <span>与朋友分享您的独特网络形象！</span>
+                  <span>{t('shareWithFriends')}</span>
                 </div>
               </div>
             )}
@@ -590,7 +632,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
           {nickname && (
             <div className="absolute -top-4 -right-2 transform rotate-12">
               <span className="inline-block bg-yellow-400 text-yellow-800 text-xs px-2 py-1 rounded-lg font-bold shadow-md animate-bounce">
-                🎁 新功能!
+                {t('newFeatureLabel')}
               </span>
             </div>
           )}
@@ -622,7 +664,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
                   {/* 中间文本 */}
                   <div className="flex-1">
                     <h3 className="text-white font-bold text-base leading-tight">
-                      生成你的专属卡片
+                      {t('generateYourCard')}
                     </h3>
                     {/* 外号名字区域 - 解决红色箭头指向的问题 */}
                     <div className="mt-1 bg-white bg-opacity-90 px-2 py-1 rounded text-blue-700 font-bold text-sm inline-block shadow-sm">
@@ -633,7 +675,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
                   {/* 右侧按钮 */}
                   <div className="flex-shrink-0">
                     <button className="bg-white text-blue-600 hover:bg-blue-50 px-3 py-1.5 rounded-md text-sm font-bold shadow flex items-center transition-colors">
-                      <span>立即生成</span>
+                      <span>{t('generateNow')}</span>
                       <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                       </svg>
@@ -647,19 +689,19 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
                     <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
                     </svg>
-                    <span>高清图片</span>
+                    <span>{t('highQualityImage')}</span>
                   </div>
                   <div className="flex items-center">
                     <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
                     </svg>
-                    <span>随时保存分享</span>
+                    <span>{t('saveShareAnytime')}</span>
                   </div>
                   <div className="flex items-center">
                     <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
                     </svg>
-                    <span>已有<span className="font-bold text-white mx-0.5">97%</span>用户使用</span>
+                    <span>{t('userUsagePercent')}</span>
                   </div>
                 </div>
               </div>
@@ -669,8 +711,8 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
       ) : (
         <div className="p-5 bg-gray-50 rounded-lg border border-gray-200 text-center text-gray-500">
           {bookmarks.length > 0 
-            ? '点击"开始分析"按钮，获取您的专属网络人格分析'
-            : '请先上传书签，然后再进行网络人格分析'}
+            ? t('clickToAnalyze')
+            : t('noBookmarks')}
         </div>
       )}
 
@@ -691,7 +733,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-lg w-full max-h-[90vh] overflow-auto p-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-semibold">您的专属网络人格卡片</h3>
+              <h3 className="text-xl font-semibold">{t('cardModal.title')}</h3>
               <button onClick={() => setShowCardModal(false)} className="text-gray-500 hover:text-gray-700">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -729,7 +771,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
                     >
                       <span className="text-xl">🧠</span>
                     </div>
-                    <h2 className="text-white font-bold text-lg">网络人格分析</h2>
+                    <h2 className="text-white font-bold text-lg">{tCard('title')}</h2>
                   </div>
                   <div 
                     className="text-xs text-white px-2 py-1 rounded-full"
@@ -766,13 +808,13 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
                   {/* 添加网络人格标签 */}
                   <div className="flex flex-wrap justify-center gap-1 mt-3">
                     <span className="inline-block px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-full border border-indigo-100">
-                      #技术探索者
+                      {tCard('tags.techExplorer')}
                     </span>
                     <span className="inline-block px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-full border border-indigo-100">
-                      #知识收藏家
+                      {tCard('tags.knowledgeCollector')}
                     </span>
                     <span className="inline-block px-2 py-0.5 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-full border border-indigo-100">
-                      #数字生活者
+                      {tCard('tags.digitalNative')}
                     </span>
                   </div>
                 </div>
@@ -828,7 +870,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
                       <path strokeLinecap="round" strokeLinejoin="round" d="M10.172 13.828a4 4 0 015.656 0l4 4a4 4 0 01-5.656 5.656l-1.102-1.101" />
                     </svg>
-                    <span>www.bookmarkmaven.space</span>
+                    <span>{tCard('website')}</span>
                   </div>
                   
                   <div className="flex items-center space-x-2">
@@ -854,7 +896,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
                   <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
                   </svg>
-                  免费保存我的专属卡片
+{t('cardModal.save')}
                   <span className="ml-1 animate-pulse">✨</span>
                 </span>
               </button>
@@ -862,7 +904,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
                 <svg className="w-4 h-4 mr-1 text-green-500" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
                 </svg>
-                <span>完全免费，图片将自动下载到你的设备</span>
+                <span>{t('cardModal.disclaimer')}</span>
               </div>
             </div>
           </div>
@@ -878,7 +920,7 @@ export default function BookmarkComment({ bookmarks }: BookmarkCommentProps) {
           >
             <span className="flex items-center">
               <span className="text-xl mr-2">✨</span>
-              <span className="font-bold">开始分析</span>
+              <span className="font-bold">{t('floatingButton')}</span>
               <span className="w-0 overflow-hidden group-hover:w-5 transition-all duration-300">
                 <svg className="ml-1.5 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
