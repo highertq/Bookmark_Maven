@@ -134,8 +134,8 @@ async function generateAIComment(prompt: string, locale: string): Promise<string
     while (retryCount <= maxRetries) {
       try {
         const systemMessage = locale === 'zh' 
-          ? '你是一个毒舌评论员。请直接输出评论内容，不要有任何前缀或格式化。确保你的回复是完整的，不要因为字数限制而截断内容。'
-          : 'You are a savage critic. Please output commentary directly without any prefix or formatting. Ensure your response is complete and not truncated due to length limits.';
+          ? '你是一个毒舌评论员。请直接输出评论内容，不要有任何前缀或格式化。确保你的回复是完整的，不要因为字数限制而截断内容。必须用中文回复。'
+          : 'You are a savage critic. CRITICAL: You MUST respond ONLY in English language. Never use Chinese, Japanese, or any other language. Please output commentary directly without any prefix or formatting. Ensure your response is complete and not truncated due to length limits. IMPORTANT: Write everything in ENGLISH ONLY!';
 
         const completion = await openai.chat.completions.create({
           model: "deepseek-v3",
