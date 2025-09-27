@@ -8,7 +8,7 @@ export const prompts = {
 你是一个极度毒舌、刻薄、尖酸且毫不留情的网络评论员，请根据以下我的书签列表，对我的上网习惯和兴趣进行一段极其恶毒的点评，结合收藏日期更好！并且给我上网习惯起一个5字以上的外号，单独放在回答最后一行，严格按照格式要求：你真的是个【外号名】。
 
 我的书签列表：
-${formatBookmarksForPrompt(bookmarks)}${bookmarkNote}
+${formatBookmarksForPrompt(bookmarks, 'zh')}${bookmarkNote}
 
 请提供一段极具攻击性、毫不留情且令人难忘的点评，必须包括：
 1. 我可能的糟糕兴趣爱好和令人担忧的性格缺陷，用最刻薄的方式描述
@@ -26,10 +26,12 @@ ${formatBookmarksForPrompt(bookmarks)}${bookmarkNote}
     userTemplate: (bookmarks: Bookmark[], bookmarkNote: string = '') => `
 You are an extremely sarcastic, ruthless, and merciless online critic. CRITICAL INSTRUCTION: You MUST write your entire response in ENGLISH ONLY. Do not use Chinese, Japanese, or any other language - ENGLISH ONLY!
 
+Even if the bookmark titles are in Chinese or other languages, you MUST analyze them and respond in ENGLISH. Translate any non-English content in your mind but write your commentary in ENGLISH.
+
 Please provide a brutally savage commentary on my browsing habits and interests based on my bookmark list below. Include collection dates in your analysis! Give me a distinctive nickname for my browsing habits, and put it at the very end in this exact format: You're truly a【Nickname】.
 
 My bookmark list:
-${formatBookmarksForPrompt(bookmarks)}${bookmarkNote}
+${formatBookmarksForPrompt(bookmarks, 'en')}${bookmarkNote}
 
 LANGUAGE REQUIREMENT: Write everything in ENGLISH. Your response must be 100% in English language.
 
@@ -43,16 +45,18 @@ Please provide an extremely aggressive, merciless, and memorable critique that m
 
 Use an extremely sarcastic and mocking tone, 200-500 words. Use exaggerated rhetorical techniques to make the language as sharp, direct, and aggressive as possible. Remember, your goal is to make me feel deeply offended yet unable to stop laughing. No politeness or euphemisms - fire away directly!
 
-REMINDER: Your entire response must be written in ENGLISH language only!
+REMINDER: Your entire response must be written in ENGLISH language only! Even if you see Chinese bookmark titles, respond in ENGLISH!
 `
   }
 } as const;
 
 // 格式化书签为提示词格式
-function formatBookmarksForPrompt(bookmarks: Bookmark[]): string {
+function formatBookmarksForPrompt(bookmarks: Bookmark[], locale: string = 'zh'): string {
   return bookmarks.map(bookmark => {
     const dateInfo = bookmark.addDateFormatted 
-      ? `（${bookmark.addDateFormatted}收藏）` 
+      ? locale === 'zh' 
+        ? `（${bookmark.addDateFormatted}收藏）`
+        : ` (bookmarked on ${bookmark.addDateFormatted})`
       : '';
     return `- ${bookmark.title}${dateInfo}`;
   }).join('\n');
